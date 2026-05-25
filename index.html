@@ -216,47 +216,27 @@ Rabindranath Duran Pons
 <h1>What can history tell us before kickoff?</h1>
 
 </section>
-<section id="a-40-minute-arc" class="slide level2">
-<h2>A 40-minute arc</h2>
-<table class="caption-top">
-<colgroup>
-<col style="width: 18%">
-<col style="width: 39%">
-<col style="width: 42%">
-</colgroup>
-<thead>
-<tr class="header">
-<th>Phase</th>
-<th>What you show</th>
-<th>Where it lives</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td><strong>Upload</strong></td>
-<td>CSV → GCS → BigQuery</td>
-<td><code>upload_international_results.R</code></td>
-</tr>
-<tr class="even">
-<td><strong>Explore</strong></td>
-<td>Filters, charts, World Cup H2H</td>
-<td>Shiny app (<code>app.R</code>)</td>
-</tr>
-<tr class="odd">
-<td><strong>Close</strong></td>
-<td>Same schema in production</td>
-<td>One sentence + optional static BQ slide</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Today:</strong> reliable demo on bundled CSVs — not live BigQuery in the app.</p>
-<aside class="notes">
+<section id="before-a-2026-group-stage-match" class="slide level2">
+<h2>Before a 2026 group-stage match…</h2>
 <ul>
-<li>~5 min: motivation + data</li>
-<li>~10 min: ingestion pipeline (GCS/BQ)</li>
-<li>~20 min: Shiny walkthrough, end on World Cup H2H tab</li>
-<li>~5 min: deploy, future work, Q&amp;A</li>
+<li>How often have these two teams met?</li>
+<li>Who has scored more across eras — and when?</li>
+<li>Does the record look different if you count <strong>only World Cups</strong>?</li>
 </ul>
+<div class="fragment">
+<p><em>[Placeholder: screenshot — World Cup tab, fixture picker + H2H summary]</em></p>
+</div>
+</section>
+<section id="and-broader-questions" class="slide level2">
+<h2>…and broader questions</h2>
+<ul>
+<li>Which national teams dominated which eras?</li>
+<li>How has home advantage changed over a century of fixtures?</li>
+<li>Who hosts the most matches they are not playing in?</li>
+</ul>
+<p><strong>Analytics starts with questions</strong> — then we find data and build tools to answer them.</p>
+<aside class="notes">
+<p>Optional: ask the room one question they care about before moving to data.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -269,21 +249,43 @@ Rabindranath Duran Pons
           display:block!important;
       }</style></aside>
 </section>
-<section id="the-question" class="slide level2">
-<h2>The question</h2>
-<p><strong>Before a 2026 group-stage match, what does the historical record say?</strong></p>
+<section id="free-data-for-soccer-is-hard-to-find" class="slide level2">
+<h2>Free data for soccer is hard to find</h2>
+<p>Compared with many North American sports, <strong>open, clean, match-level international football data</strong> is scarce:</p>
 <ul>
-<li>How often have these teams met?</li>
-<li>Goals for and against across eras</li>
-<li>World Cup-only vs all competitions</li>
+<li>League APIs are often paid, fragmented, or terms-restricted</li>
+<li>Aggregators rarely cover <strong>1872 → today</strong> in one place</li>
+<li>Men’s full internationals (not Olympics, not B-teams) are easy to mix up</li>
 </ul>
-<div class="fragment">
-<p><em>[Placeholder: screenshot or GIF of World Cup tab — fixture picker + H2H summary]</em></p>
-</div>
+<p>That gap is why one community dataset matters.</p>
 </section>
-<section id="data-in-the-repo" class="slide level2">
-<h2>Data in the repo</h2>
-<p><code>data/international/</code> (bundled with the Shiny app for offline demos)</p>
+<section id="data-source-martj42international_results" class="slide level2">
+<h2>Data source — <a href="https://github.com/martj42/international_results">martj42/international_results</a></h2>
+<p><strong>Special thanks</strong> to <a href="https://github.com/martj42/international_results">martj42/international_results</a> — a maintained, <strong>free</strong> dataset of men’s international matches:</p>
+<ul>
+<li><strong>~49,000+ results</strong> from the first official match (1872) through recent years</li>
+<li>World Cups, friendlies, continental tournaments — one consistent schema</li>
+<li>Companion files: goalscorers, shootouts, former country names</li>
+<li><strong>CC0</strong> license — use and share with attribution</li>
+</ul>
+<p>Also on <a href="https://www.kaggle.com/datasets/martj42/international-football-results-from-1872-to-2017">Kaggle</a> · contributions welcome via PRs on GitHub</p>
+<aside class="notes">
+<p>Say clearly: “I did not build this raw history — I stand on martj42’s work.”</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="what-we-use-in-this-project" class="slide level2">
+<h2>What we use in this project</h2>
+<p>Copies live under <code>data/international/</code> in <a href="https://github.com/rabin0208/world_cup_analytics">world_cup_analytics</a> (bundled for offline Shiny demos):</p>
 <table class="caption-top">
 <thead>
 <tr class="header">
@@ -302,28 +304,15 @@ Rabindranath Duran Pons
 </tr>
 <tr class="odd">
 <td><code>shootouts.csv</code></td>
-<td>Penalty shootouts <em>(extend later)</em></td>
+<td>Penalty shootouts</td>
 </tr>
 <tr class="even">
 <td><code>former_names.csv</code></td>
-<td>Country name mappings <em>(extend later)</em></td>
+<td>Historical country name mappings</td>
 </tr>
 </tbody>
 </table>
-<p>~50k rows — fine locally; filters in <strong>dplyr</strong>.</p>
-<aside class="notes">
-<p>Mention open international results dataset source if you name it on the slide.</p>
-<style type="text/css">
-        span.MJX_Assistive_MathML {
-          position:absolute!important;
-          clip: rect(1px, 1px, 1px, 1px);
-          padding: 1px 0 0 0!important;
-          border: 0!important;
-          height: 1px!important;
-          width: 1px!important;
-          overflow: hidden!important;
-          display:block!important;
-      }</style></aside>
+<p>Same columns whether you read from disk or load into a warehouse later.</p>
 </section>
 <section id="end-to-end-pipeline" class="slide level2">
 <h2>End-to-end pipeline</h2>
@@ -513,7 +502,7 @@ Rabindranath Duran Pons
 </ol>
 <p><em>[Placeholder: two teams you plan to demo — e.g.&nbsp;USA vs Mexico or your choice]</em></p>
 <aside class="notes">
-<p>Rehearse this path; allow 8–12 minutes. Narrate “history before kickoff.”</p>
+<p>Rehearse this path. Narrate “history before kickoff.”</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -561,7 +550,9 @@ Rabindranath Duran Pons
 </section>
 <section id="want-to-learn-more" class="slide level2">
 <h2>Want to learn more?</h2>
-<p><strong>GitHub — analytics app &amp; data:</strong></p>
+<p><strong>Data (source dataset):</strong></p>
+<p><a href="https://github.com/martj42/international_results">https://github.com/martj42/international_results</a></p>
+<p><strong>This project — Shiny app &amp; pipeline:</strong></p>
 <p><a href="https://github.com/rabin0208/world_cup_analytics">https://github.com/rabin0208/world_cup_analytics</a></p>
 <p><strong>This deck:</strong></p>
 <p><code>world_cup_analytics_presentation</code> — render with Quarto:</p>

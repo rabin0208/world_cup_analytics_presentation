@@ -10,55 +10,73 @@ execute:
 
 # What can history tell us before kickoff?
 
-## A 40-minute arc
+## Before a 2026 group-stage match…
 
-| Phase | What you show | Where it lives |
-|-------|---------------|----------------|
-| **Upload** | CSV → GCS → BigQuery | `upload_international_results.R` |
-| **Explore** | Filters, charts, World Cup H2H | Shiny app (`app.R`) |
-| **Close** | Same schema in production | One sentence + optional static BQ slide |
-
-**Today:** reliable demo on bundled CSVs — not live BigQuery in the app.
-
-::: {.notes}
-- ~5 min: motivation + data
-- ~10 min: ingestion pipeline (GCS/BQ)
-- ~20 min: Shiny walkthrough, end on World Cup H2H tab
-- ~5 min: deploy, future work, Q&A
-:::
-
----
-
-## The question
-
-**Before a 2026 group-stage match, what does the historical record say?**
-
-- How often have these teams met?
-- Goals for and against across eras
-- World Cup-only vs all competitions
+- How often have these two teams met?
+- Who has scored more across eras — and when?
+- Does the record look different if you count **only World Cups**?
 
 ::: {.fragment}
-*[Placeholder: screenshot or GIF of World Cup tab — fixture picker + H2H summary]*
+*[Placeholder: screenshot — World Cup tab, fixture picker + H2H summary]*
 :::
 
 ---
 
-## Data in the repo
+## …and broader questions
 
-`data/international/` (bundled with the Shiny app for offline demos)
+- Which national teams dominated which eras?
+- How has home advantage changed over a century of fixtures?
+- Who hosts the most matches they are not playing in?
+
+**Analytics starts with questions** — then we find data and build tools to answer them.
+
+::: {.notes}
+Optional: ask the room one question they care about before moving to data.
+:::
+
+---
+
+## Free data for soccer is hard to find
+
+Compared with many North American sports, **open, clean, match-level international football data** is scarce:
+
+- League APIs are often paid, fragmented, or terms-restricted
+- Aggregators rarely cover **1872 → today** in one place
+- Men's full internationals (not Olympics, not B-teams) are easy to mix up
+
+That gap is why one community dataset matters.
+
+---
+
+## Data source — [martj42/international_results](https://github.com/martj42/international_results)
+
+**Special thanks** to [martj42/international_results](https://github.com/martj42/international_results) — a maintained, **free** dataset of men's international matches:
+
+- **~49,000+ results** from the first official match (1872) through recent years
+- World Cups, friendlies, continental tournaments — one consistent schema
+- Companion files: goalscorers, shootouts, former country names
+- **CC0** license — use and share with attribution
+
+Also on [Kaggle](https://www.kaggle.com/datasets/martj42/international-football-results-from-1872-to-2017) · contributions welcome via PRs on GitHub
+
+::: {.notes}
+Say clearly: "I did not build this raw history — I stand on martj42's work."
+:::
+
+---
+
+## What we use in this project
+
+Copies live under `data/international/` in [world_cup_analytics](https://github.com/rabin0208/world_cup_analytics) (bundled for offline Shiny demos):
 
 | File | Role |
 |------|------|
 | `results.csv` | Matches — date, teams, scores, tournament, venue |
 | `goalscorers.csv` | Goal events linked to matches |
-| `shootouts.csv` | Penalty shootouts *(extend later)* |
-| `former_names.csv` | Country name mappings *(extend later)* |
+| `shootouts.csv` | Penalty shootouts |
+| `former_names.csv` | Historical country name mappings |
 
-~50k rows — fine locally; filters in **dplyr**.
-
-::: {.notes}
-Mention open international results dataset source if you name it on the slide.
-:::
+Same columns whether you read from disk or load into a warehouse later.
 
 ---
 
@@ -216,7 +234,7 @@ Searchable match table (DT).
 *[Placeholder: two teams you plan to demo — e.g. USA vs Mexico or your choice]*
 
 ::: {.notes}
-Rehearse this path; allow 8–12 minutes. Narrate "history before kickoff."
+Rehearse this path. Narrate "history before kickoff."
 :::
 
 ---
@@ -269,7 +287,11 @@ Load **all** tables to BQ first; align types with existing `app.R` prep.
 
 ## Want to learn more?
 
-**GitHub — analytics app & data:**
+**Data (source dataset):**
+
+[https://github.com/martj42/international_results](https://github.com/martj42/international_results)
+
+**This project — Shiny app & pipeline:**
 
 [https://github.com/rabin0208/world_cup_analytics](https://github.com/rabin0208/world_cup_analytics)
 
