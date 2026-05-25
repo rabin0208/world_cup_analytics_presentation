@@ -1,0 +1,288 @@
+---
+title: "World Cup Analytics with R"
+author: "Rabindranath Duran Pons"
+date: today
+format: revealjs
+execute:
+  echo: false
+  warning: false
+---
+
+# What can history tell us before kickoff?
+
+## A 40-minute arc
+
+| Phase | What you show | Where it lives |
+|-------|---------------|----------------|
+| **Upload** | CSV → GCS → BigQuery | `upload_international_results.R` |
+| **Explore** | Filters, charts, World Cup H2H | Shiny app (`app.R`) |
+| **Close** | Same schema in production | One sentence + optional static BQ slide |
+
+**Today:** reliable demo on bundled CSVs — not live BigQuery in the app.
+
+::: {.notes}
+- ~5 min: motivation + data
+- ~10 min: ingestion pipeline (GCS/BQ)
+- ~20 min: Shiny walkthrough, end on World Cup H2H tab
+- ~5 min: deploy, future work, Q&A
+:::
+
+---
+
+## The question
+
+**Before a 2026 group-stage match, what does the historical record say?**
+
+- How often have these teams met?
+- Goals for and against across eras
+- World Cup-only vs all competitions
+
+::: {.fragment}
+*[Placeholder: screenshot or GIF of World Cup tab — fixture picker + H2H summary]*
+:::
+
+---
+
+## Data in the repo
+
+`data/international/` (bundled with the Shiny app for offline demos)
+
+| File | Role |
+|------|------|
+| `results.csv` | Matches — date, teams, scores, tournament, venue |
+| `goalscorers.csv` | Goal events linked to matches |
+| `shootouts.csv` | Penalty shootouts *(extend later)* |
+| `former_names.csv` | Country name mappings *(extend later)* |
+
+~50k rows — fine locally; filters in **dplyr**.
+
+::: {.notes}
+Mention open international results dataset source if you name it on the slide.
+:::
+
+---
+
+## End-to-end pipeline
+
+```{mermaid}
+%%| fig-width: 9
+flowchart LR
+  CSV[data/international/*.csv] --> GCS[GCS raw/]
+  GCS --> BQ[BigQuery analytics.*]
+  CSV --> Shiny[Shiny app read.csv]
+  BQ -.->|production| Shiny
+```
+
+**Upload** publishes tables. **Explore** uses the same column names from disk.
+
+*[Placeholder: `images/pipeline.png` — optional custom diagram]*
+
+---
+
+## Upload — R to GCS and BigQuery
+
+`upload_international_results.R` in the **world_cup_analytics** repo:
+
+1. `gcs_upload()` — dated prefix under `raw/international/results/`
+2. `read_csv()` with explicit types (`NA` scores → NULL)
+3. `bq_table_upload()` — `WRITE_TRUNCATE` into `analytics.international_results`
+
+::: {.notes}
+Run this in RStudio/console for 10–20 seconds if you want; do not depend on it for the Shiny demo.
+:::
+
+---
+
+## Upload script (placeholder)
+
+```r
+# TODO: trim to 8–12 lines for the slide
+gcs_upload(local_csv, name = gcs_object)
+results <- read_csv(local_csv, col_types = cols(...))
+bq_table_upload(
+  bq_table(project_id, "analytics", "international_results"),
+  results,
+  write_disposition = "WRITE_TRUNCATE"
+)
+```
+
+*[Placeholder: terminal output — row count after load]*
+
+---
+
+## BigQuery in the warehouse
+
+**Loaded today:** `international_results` (from `results.csv`)
+
+**Not in BQ yet:** `goalscorers` (and other tables) — would need a second upload or drop the Goalscorers tab for a BQ-only app.
+
+```r
+# Static slide only — optional console peek, not live in Shiny
+# bq_table_download(
+#   bq_table(Sys.getenv("GCP_PROJECT_ID"), "analytics", "international_results")
+# )
+```
+
+::: {.notes}
+Say: "In production you'd replace read.csv with bq_table_download or SQL; the dplyr logic stays the same."
+:::
+
+---
+
+## Why the live demo stays on CSV
+
+| Concern | CSV bundled in repo | BigQuery at session start |
+|---------|----------------------|---------------------------|
+| Auth / network | Works offline | SA JSON, IAM, billing |
+| Tables | All tabs covered | Only results in BQ today |
+| Posit Connect | Ship `data/international/` | Secrets + BQ access |
+| Latency | Instant filters | Download on every deploy |
+
+**Verdict for this talk:** CSV in the app; BQ in the pipeline story.
+
+---
+
+## Explore — Shiny dashboard
+
+**International Football Analytics** (`app.R`)
+
+- **bslib** layout, sidebar filters
+- Same preprocessing as you'd do after a BQ pull: dates, `is_played`, World Cup flags
+
+*[Placeholder: app home — value boxes: Matches / Total goals / Avg goals]*
+
+---
+
+## Sidebar filters (placeholder)
+
+- Year range
+- Tournament (multi-select)
+- Team (home or away)
+- Neutral venue only
+
+*[Placeholder: screenshot with filters applied — e.g. FIFA World Cup + last 30 years]*
+
+::: {.notes}
+Reset filters button — quick demo reset.
+:::
+
+---
+
+## Tab: Overview
+
+Matches and goals per year (ggplot).
+
+*[Placeholder: `plot_matches_year` + `plot_goals_year`]*
+
+---
+
+## Tab: Teams
+
+Most active teams in the current filter.
+
+*[Placeholder: `plot_top_teams` bar chart]*
+
+---
+
+## Tab: Goalscorers
+
+Top scorers for filtered matches (joins to `goalscorers.csv`).
+
+*[Placeholder: `plot_top_scorers`]*
+
+::: {.notes}
+This tab is why a BQ-only v1 would be incomplete without uploading goalscorers too.
+:::
+
+---
+
+## Tab: Results
+
+Searchable match table (DT).
+
+*[Placeholder: `tbl_results` with a famous rivalry or tournament filter]*
+
+---
+
+## Tab: World Cup — centerpiece demo
+
+**2026 group-stage fixtures** (unplayed rows in `results.csv`)
+
+1. Pick a fixture from the dropdown
+2. **Head-to-head summary** — wins, draws, goals
+3. Tables: all competitions vs **World Cup-only**
+4. Full schedule of upcoming fixtures
+
+*[Placeholder: two teams you plan to demo — e.g. USA vs Mexico or your choice]*
+
+::: {.notes}
+Rehearse this path; allow 8–12 minutes. Narrate "history before kickoff."
+:::
+
+---
+
+## Head-to-head logic (placeholder)
+
+```r
+# Same helpers whether data came from CSV or BigQuery
+h2h_matches(team_a, team_b, data = played_results)
+h2h_summary(team_a, team_b, data = played_results)
+```
+
+*[Placeholder: diagram or 1-line callout — home/away goal attribution]*
+
+---
+
+## Deploy — Posit Connect Cloud
+
+Same pattern as other course apps:
+
+1. `rsconnect::writeManifest()` next to `app.R`
+2. Push `app.R`, `manifest.json`, **`data/international/`**
+3. Connect restores packages from `manifest.json`
+
+*[Placeholder: Connect deploy URL or dashboard screenshot]*
+
+---
+
+## Optional v2 — `DATA_SOURCE` flag
+
+Middle ground (describe on a slide; build after the talk if needed):
+
+```r
+# DATA_SOURCE=local  -> read.csv (current)
+# DATA_SOURCE=bq     -> bq_table_download once at startup
+```
+
+Load **all** tables to BQ first; align types with existing `app.R` prep.
+
+---
+
+## Future work (placeholders)
+
+- [ ] Parquet upload script (companion to CSV → GCS path)
+- [ ] `goalscorers` (and shootouts) into BigQuery
+- [ ] BQ-backed Shiny when auth is stable on Connect
+- [ ] Knockout rounds / shootouts in the UI
+
+---
+
+## Want to learn more?
+
+**GitHub — analytics app & data:**
+
+[https://github.com/rabin0208/world_cup_analytics](https://github.com/rabin0208/world_cup_analytics)
+
+**This deck:**
+
+`world_cup_analytics_presentation` — render with Quarto:
+
+```bash
+quarto render index.qmd
+```
+
+# Thank you!
+
+::: {.notes}
+Thank audience; point to repo and office hours.
+:::

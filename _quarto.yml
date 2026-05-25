@@ -1,0 +1,8 @@
+format:
+  revealjs:
+    theme: default
+    transition: slide
+    navigation: true
+    footer: "World Cup Analytics"
+    chalkboard:
+      buttons: false
