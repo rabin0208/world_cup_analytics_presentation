@@ -251,6 +251,165 @@ h2h_summary(team_a, team_b, data = played_results)
 
 ---
 
+## From description to a naive forecast
+
+The Shiny tab answers **what happened** between two countries.
+
+The simplest “prediction” step: **use those same counts as probabilities**
+
+$$
+P(\text{A wins}) \approx \frac{\text{A wins in past meetings}}{n}, \quad
+P(\text{draw}) \approx \frac{\text{draws}}{n}, \quad
+P(\text{B wins}) \approx \frac{\text{B wins}}{n}
+$$
+
+No training step — just **historical frequencies** (works with match-level CSV / BigQuery only).
+
+::: {.notes}
+Emphasize: this is a teaching sketch, not a betting model. Small $n$ → noisy.
+:::
+
+---
+
+## Sanity check — overall match rates
+
+Before trusting a rivalry’s history, know the **base rates** in the full results file:
+
+```{r}
+#| label: fig-baseline-rates
+#| fig-cap: "Share of home win, draw, and away win (all played internationals)"
+#| fig-width: 7
+#| fig-height: 3.5
+library(ggplot2)
+
+data_path <- file.path("..", "world_cup_analytics", "data", "international", "results.csv")
+if (file.exists(data_path)) {
+  raw <- read.csv(data_path, stringsAsFactors = FALSE, na.strings = c("", "NA"))
+  played <- raw[!is.na(raw$home_score) & !is.na(raw$away_score), ]
+  hw <- sum(played$home_score > played$away_score)
+  dr <- sum(played$home_score == played$away_score)
+  aw <- sum(played$home_score < played$away_score)
+  n <- nrow(played)
+  baseline <- data.frame(
+    outcome = c("Home win", "Draw", "Away win"),
+    rate = c(hw, dr, aw) / n
+  )
+} else {
+  baseline <- data.frame(
+    outcome = c("Home win", "Draw", "Away win"),
+    rate = c(0.48, 0.25, 0.27)
+  )
+}
+
+ggplot(baseline, aes(x = outcome, y = rate, fill = outcome)) +
+  geom_col(alpha = 0.85, width = 0.6) +
+  geom_text(aes(label = scales::percent(rate, accuracy = 0.1)),
+            vjust = -0.4, fontface = "bold") +
+  scale_y_continuous(labels = scales::percent_format(), limits = c(0, 0.6)) +
+  scale_fill_manual(values = c("Home win" = "#2d7a32", "Draw" = "#ff9800", "Away win" = "#c62828")) +
+  labs(x = NULL, y = "Share of matches") +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+**Benchmark:** any fancier model should beat “always predict home win” on out-of-sample matches.
+
+---
+
+## Example — Brazil vs Argentina (empirical H2H)
+
+Same logic as `h2h_summary()` in the app: count wins from each team’s perspective.
+
+```{r}
+#| label: fig-h2h-naive-prob
+#| fig-cap: "Naive win/draw probabilities from head-to-head history"
+#| fig-width: 7
+#| fig-height: 3.5
+library(ggplot2)
+
+team_a <- "Brazil"
+team_b <- "Argentina"
+
+h2h_probs <- function(team_a, team_b, played) {
+  m <- played[
+    (played$home_team == team_a & played$away_team == team_b) |
+      (played$home_team == team_b & played$away_team == team_a),
+  ]
+  if (nrow(m) == 0) {
+    return(NULL)
+  }
+  wa <- dr <- wb <- 0L
+  for (i in seq_len(nrow(m))) {
+    row <- m[i, ]
+    if (row$home_team == team_a) {
+      ga <- row$home_score
+      gb <- row$away_score
+    } else {
+      ga <- row$away_score
+      gb <- row$home_score
+    }
+    if (ga > gb) wa <- wa + 1L else if (ga < gb) wb <- wb + 1L else dr <- dr + 1L
+  }
+  n <- wa + dr + wb
+  data.frame(
+    outcome = c(team_a, "Draw", team_b),
+    rate = c(wa, dr, wb) / n,
+    matches = n
+  )
+}
+
+if (file.exists(data_path)) {
+  if (!exists("played")) {
+    raw <- read.csv(data_path, stringsAsFactors = FALSE, na.strings = c("", "NA"))
+    played <- raw[!is.na(raw$home_score) & !is.na(raw$away_score), ]
+  }
+  probs <- h2h_probs(team_a, team_b, played)
+  if (is.null(probs)) {
+    probs <- data.frame(
+      outcome = c(team_a, "Draw", team_b),
+      rate = c(0.42, 0.21, 0.37),
+      matches = 19L
+    )
+  }
+} else {
+  probs <- data.frame(
+    outcome = c(team_a, "Draw", team_b),
+    rate = c(0.42, 0.21, 0.37),
+    matches = 19L
+  )
+}
+
+ggplot(probs, aes(x = outcome, y = rate, fill = outcome)) +
+  geom_col(alpha = 0.85, width = 0.6) +
+  geom_text(aes(label = scales::percent(rate, accuracy = 0.1)),
+            vjust = -0.4, fontface = "bold") +
+  scale_y_continuous(labels = scales::percent_format(), limits = c(0, 0.65)) +
+  scale_fill_manual(values = c("#2d7a32", "#ff9800", "#c62828")) +
+  labs(
+    x = NULL, y = "Naive probability",
+    title = paste0("Based on ", probs$matches[1], " past meetings")
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none", plot.title = element_text(hjust = 0.5, face = "bold"))
+```
+
+**Talking point:** “If history repeated blindly, we’d assign these shares — but $n$ is small and rosters change.”
+
+---
+
+## What this is — and what’s next
+
+| With match-level CSV / BQ | Needs event or lineup data (StatsBomb, etc.) |
+|---------------------------|-----------------------------------------------|
+| Empirical H2H, home/draw/away baselines | xG, player form, tactical matchups |
+| Elo / simple glm on team strength | Club vs international windows with lineups |
+
+**This talk:** exploration + **one** naive forecast — enough to connect to your abstract’s “prediction sketch.”
+
+**Later:** Elo ratings, logistic model in BigQuery, Parquet event pipeline for club comparisons.
+
+---
+
 ## Deploy — Posit Connect Cloud
 
 Same pattern as other course apps:
@@ -278,10 +437,11 @@ Load **all** tables to BQ first; align types with existing `app.R` prep.
 
 ## Future work (placeholders)
 
-- [ ] Parquet upload script (companion to CSV → GCS path)
+- [ ] Elo or `glm()` on `played_results` (first step beyond naive frequencies)
+- [ ] Parquet upload script (StatsBomb-style thread from the abstract)
 - [ ] `goalscorers` (and shootouts) into BigQuery
 - [ ] BQ-backed Shiny when auth is stable on Connect
-- [ ] Knockout rounds / shootouts in the UI
+- [ ] Looker Studio (or similar) on published tables
 
 ---
 

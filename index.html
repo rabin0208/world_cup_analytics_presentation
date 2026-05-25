@@ -522,6 +522,73 @@ Rabindranath Duran Pons
 <span id="cb3-3"><a href=""></a><span class="fu">h2h_summary</span>(team_a, team_b, <span class="at">data =</span> played_results)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p><em>[Placeholder: diagram or 1-line callout — home/away goal attribution]</em></p>
 </section>
+<section id="from-description-to-a-naive-forecast" class="slide level2">
+<h2>From description to a naive forecast</h2>
+<p>The Shiny tab answers <strong>what happened</strong> between two countries.</p>
+<p>The simplest “prediction” step: <strong>use those same counts as probabilities</strong></p>
+<p><span class="math display">\[
+P(\text{A wins}) \approx \frac{\text{A wins in past meetings}}{n}, \quad
+P(\text{draw}) \approx \frac{\text{draws}}{n}, \quad
+P(\text{B wins}) \approx \frac{\text{B wins}}{n}
+\]</span></p>
+<p>No training step — just <strong>historical frequencies</strong> (works with match-level CSV / BigQuery only).</p>
+<aside class="notes">
+<p>Emphasize: this is a teaching sketch, not a betting model. Small <span class="math inline">\(n\)</span> → noisy.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="sanity-check-overall-match-rates" class="slide level2">
+<h2>Sanity check — overall match rates</h2>
+<p>Before trusting a rivalry’s history, know the <strong>base rates</strong> in the full results file:</p>
+
+<img data-src="index_files/figure-revealjs/fig-baseline-rates-1.png" width="672" class="r-stretch quarto-figure-center" id="fig-baseline-rates"><p class="caption">
+Figure&nbsp;1: Share of home win, draw, and away win (all played internationals)
+</p><p><strong>Benchmark:</strong> any fancier model should beat “always predict home win” on out-of-sample matches.</p>
+</section>
+<section id="example-brazil-vs-argentina-empirical-h2h" class="slide level2">
+<h2>Example — Brazil vs Argentina (empirical H2H)</h2>
+<p>Same logic as <code>h2h_summary()</code> in the app: count wins from each team’s perspective.</p>
+
+<img data-src="index_files/figure-revealjs/fig-h2h-naive-prob-1.png" width="672" class="r-stretch quarto-figure-center" id="fig-h2h-naive-prob"><p class="caption">
+Figure&nbsp;2: Naive win/draw probabilities from head-to-head history
+</p><p><strong>Talking point:</strong> “If history repeated blindly, we’d assign these shares — but <span class="math inline">\(n\)</span> is small and rosters change.”</p>
+</section>
+<section id="what-this-is-and-whats-next" class="slide level2">
+<h2>What this is — and what’s next</h2>
+<table class="caption-top">
+<colgroup>
+<col style="width: 36%">
+<col style="width: 63%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>With match-level CSV / BQ</th>
+<th>Needs event or lineup data (StatsBomb, etc.)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Empirical H2H, home/draw/away baselines</td>
+<td>xG, player form, tactical matchups</td>
+</tr>
+<tr class="even">
+<td>Elo / simple glm on team strength</td>
+<td>Club vs international windows with lineups</td>
+</tr>
+</tbody>
+</table>
+<p><strong>This talk:</strong> exploration + <strong>one</strong> naive forecast — enough to connect to your abstract’s “prediction sketch.”</p>
+<p><strong>Later:</strong> Elo ratings, logistic model in BigQuery, Parquet event pipeline for club comparisons.</p>
+</section>
 <section id="deploy-posit-connect-cloud" class="slide level2">
 <h2>Deploy — Posit Connect Cloud</h2>
 <p>Same pattern as other course apps:</p>
@@ -542,10 +609,11 @@ Rabindranath Duran Pons
 <section id="future-work-placeholders" class="slide level2">
 <h2>Future work (placeholders)</h2>
 <ul class="task-list">
-<li><label><input type="checkbox">Parquet upload script (companion to CSV → GCS path)</label></li>
+<li><label><input type="checkbox">Elo or <code>glm()</code> on <code>played_results</code> (first step beyond naive frequencies)</label></li>
+<li><label><input type="checkbox">Parquet upload script (StatsBomb-style thread from the abstract)</label></li>
 <li><label><input type="checkbox"><code>goalscorers</code> (and shootouts) into BigQuery</label></li>
 <li><label><input type="checkbox">BQ-backed Shiny when auth is stable on Connect</label></li>
-<li><label><input type="checkbox">Knockout rounds / shootouts in the UI</label></li>
+<li><label><input type="checkbox">Looker Studio (or similar) on published tables</label></li>
 </ul>
 </section>
 <section id="want-to-learn-more" class="slide level2">
@@ -792,6 +860,44 @@ Rabindranath Duran Pons
         ]
       });
     </script>
+    
+    <script>
+      // htmlwidgets need to know to resize themselves when slides are shown/hidden.
+      // Fire the "slideenter" event (handled by htmlwidgets.js) when the current
+      // slide changes (different for each slide format).
+      (function () {
+        // dispatch for htmlwidgets
+        function fireSlideEnter() {
+          const event = window.document.createEvent("Event");
+          event.initEvent("slideenter", true, true);
+          window.document.dispatchEvent(event);
+        }
+
+        function fireSlideChanged(previousSlide, currentSlide) {
+          fireSlideEnter();
+
+          // dispatch for shiny
+          if (window.jQuery) {
+            if (previousSlide) {
+              window.jQuery(previousSlide).trigger("hidden");
+            }
+            if (currentSlide) {
+              window.jQuery(currentSlide).trigger("shown");
+            }
+          }
+        }
+
+        // hookup for slidy
+        if (window.w3c_slidy) {
+          window.w3c_slidy.add_observer(function (slide_num) {
+            // slide_num starts at position 1
+            fireSlideChanged(null, w3c_slidy.slides[slide_num - 1]);
+          });
+        }
+
+      })();
+    </script>
+
     <script id="quarto-html-after-body" type="application/javascript">
       window.document.addEventListener("DOMContentLoaded", function (event) {
         const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
