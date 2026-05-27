@@ -12,23 +12,15 @@ execute:
 
 ## Before a 2026 group-stage match…
 
-- How often have these two teams met?
-- Who has scored more across eras — and when?
-- Does the record look different if you count **only World Cups**?
+Pick a fixture and ask:
+
+- **Head-to-head** — who leads on wins and draws?
+- **Recent form** — how has each team played in their last 10 matches?
+- **Scope** — all meetings or **World Cup only**? Which years count?
 
 ::: {.fragment}
-*[Placeholder: screenshot — World Cup tab, fixture picker + H2H summary]*
+*[Placeholder: screenshot — fixture picker + matchup summary + H2H bar chart]*
 :::
-
----
-
-## …and broader questions
-
-- Which national teams dominated which eras?
-- How has home advantage changed over a century of fixtures?
-- Who hosts the most matches they are not playing in?
-
-**Analytics starts with questions** — then we find data and build tools to answer them.
 
 ::: {.notes}
 Optional: ask the room one question they care about before moving to data.
@@ -76,7 +68,7 @@ Copies live under `data/international/` in [world_cup_analytics](https://github.
 | `shootouts.csv` | Penalty shootouts |
 | `former_names.csv` | Historical country name mappings |
 
-Same columns whether you read from disk or load into a warehouse later.
+Same columns in the warehouse as in the bundled CSV — one schema from upload through the app.
 
 ---
 
@@ -85,13 +77,13 @@ Same columns whether you read from disk or load into a warehouse later.
 ```{mermaid}
 %%| fig-width: 9
 flowchart LR
-  CSV[data/international/*.csv] --> GCS[GCS raw/]
-  GCS --> BQ[BigQuery analytics.*]
-  CSV --> Shiny[Shiny app read.csv]
-  BQ -.->|production| Shiny
+  CSV[data/international/results.csv] --> GCS[GCS raw/]
+  GCS --> BQ[BigQuery analytics.international_results]
+  BQ --> Shiny[Shiny bq_table_download]
+  CSV -.->|USE_BIGQUERY=FALSE| Shiny
 ```
 
-**Upload** publishes tables. **Explore** uses the same column names from disk.
+**Upload** refreshes the warehouse. **Explore** reads `international_results` from BigQuery at startup.
 
 *[Placeholder: `images/pipeline.png` — optional custom diagram]*
 
@@ -105,18 +97,29 @@ flowchart LR
 2. `read_csv()` with explicit types (`NA` scores → NULL)
 3. `bq_table_upload()` — `WRITE_TRUNCATE` into `analytics.international_results`
 
+Re-run when martj42's dataset updates; the live app picks up the new table on next deploy.
+
 ::: {.notes}
-Run this in RStudio/console for 10–20 seconds if you want; do not depend on it for the Shiny demo.
+Optional live run in RStudio (~10–20 s) to show row count after load.
 :::
 
 ---
 
-## Upload script (placeholder)
+## Upload script
 
 ```r
-# TODO: trim to 8–12 lines for the slide
 gcs_upload(local_csv, name = gcs_object)
-results <- read_csv(local_csv, col_types = cols(...))
+results <- read_csv(
+  local_csv,
+  na = c("", "NA"),
+  col_types = cols(
+    date = col_date(),
+    home_score = col_integer(),
+    away_score = col_integer(),
+    neutral = col_logical(),
+    .default = col_character()
+  )
+)
 bq_table_upload(
   bq_table(project_id, "analytics", "international_results"),
   results,
@@ -124,112 +127,74 @@ bq_table_upload(
 )
 ```
 
-*[Placeholder: terminal output — row count after load]*
-
 ---
 
-## BigQuery in the warehouse
+## Shiny reads from BigQuery
 
-**Loaded today:** `international_results` (from `results.csv`)
-
-**Not in BQ yet:** `goalscorers` (and other tables) — would need a second upload or drop the Goalscorers tab for a BQ-only app.
+At startup, `app.R` loads match history with `bq_table_download()`:
 
 ```r
-# Static slide only — optional console peek, not live in Shiny
-# bq_table_download(
-#   bq_table(Sys.getenv("GCP_PROJECT_ID"), "analytics", "international_results")
-# )
+dest <- bq_table(project_id, "analytics", "international_results")
+results <- bq_table_download(dest, bigint = "integer")
 ```
 
+Set in `.env` on Connect (or locally):
+
+- `USE_BIGQUERY=TRUE`
+- `GCP_PROJECT_ID`, `GOOGLE_APPLICATION_CREDENTIALS`
+
+Same dplyr prep after load: dates, `is_played`, World Cup flags, H2H helpers.
+
 ::: {.notes}
-Say: "In production you'd replace read.csv with bq_table_download or SQL; the dplyr logic stays the same."
+Say: "The warehouse is the source of truth; dplyr logic is unchanged after the download."
 :::
 
 ---
 
-## Why the live demo stays on CSV
+## Local fallback — bundled CSV
 
-| Concern | CSV bundled in repo | BigQuery at session start |
-|---------|----------------------|---------------------------|
-| Auth / network | Works offline | SA JSON, IAM, billing |
-| Tables | All tabs covered | Only results in BQ today |
-| Posit Connect | Ship `data/international/` | Secrets + BQ access |
-| Latency | Instant filters | Download on every deploy |
+**Production (Connect):** `USE_BIGQUERY=TRUE` → `analytics.international_results`
 
-**Verdict for this talk:** CSV in the app; BQ in the pipeline story.
+**Local dev:** `USE_BIGQUERY=FALSE` → bundled `results.csv` (no GCP)
+
+The CSV in `data/international/` also feeds the upload script when you refresh BigQuery.
 
 ---
 
 ## Explore — Shiny dashboard
 
-**International Football Analytics** (`app.R`)
+**World Cup Analytics** (`app.R`)
 
-- **bslib** layout, sidebar filters
-- Same preprocessing as you'd do after a BQ pull: dates, `is_played`, World Cup flags
+- Single focused view — no multi-tab navigation
+- **bslib** sidebar + cards: fixture picker, H2H chart, match tables
+- Same preprocessing after load from BigQuery (or CSV fallback): dates, `is_played`, World Cup flags
 
-*[Placeholder: app home — value boxes: Matches / Total goals / Avg goals]*
+*[Placeholder: app home — value boxes: 2026 fixtures / World Cup matches played]*
 
 ---
 
-## Sidebar filters (placeholder)
+## Sidebar — fixture and H2H filters
 
-- Year range
-- Tournament (multi-select)
-- Team (home or away)
-- Neutral venue only
+- **Fixture** — dropdown of unplayed 2026 group-stage matches from the loaded results
+- **Head-to-head year range** — slider over full history (1872 → today)
+- **Competition** — multi-select; leave empty for all competitions, or pick e.g. *FIFA World Cup* only
 
-*[Placeholder: screenshot with filters applied — e.g. FIFA World Cup + last 30 years]*
+*[Placeholder: screenshot with fixture selected + competition filter applied]*
 
 ::: {.notes}
-Reset filters button — quick demo reset.
+Demo flow: pick a fixture → widen/narrow years → optionally filter to World Cup meetings only.
 :::
 
 ---
 
-## Tab: Overview
+## Main view — matchup and head-to-head
 
-Matches and goals per year (ggplot).
+For the selected fixture:
 
-*[Placeholder: `plot_matches_year` + `plot_goals_year`]*
-
----
-
-## Tab: Teams
-
-Most active teams in the current filter.
-
-*[Placeholder: `plot_top_teams` bar chart]*
-
----
-
-## Tab: Goalscorers
-
-Top scorers for filtered matches (joins to `goalscorers.csv`).
-
-*[Placeholder: `plot_top_scorers`]*
-
-::: {.notes}
-This tab is why a BQ-only v1 would be incomplete without uploading goalscorers too.
-:::
-
----
-
-## Tab: Results
-
-Searchable match table (DT).
-
-*[Placeholder: `tbl_results` with a famous rivalry or tournament filter]*
-
----
-
-## Tab: World Cup — centerpiece demo
-
-**2026 group-stage fixtures** (unplayed rows in `results.csv`)
-
-1. Pick a fixture from the dropdown
-2. **Head-to-head summary** — wins, draws, goals
-3. Tables: all competitions vs **World Cup-only**
-4. Full schedule of upcoming fixtures
+1. **Matchup card** — date, city, neutral vs non-neutral venue
+2. **H2H bar chart** — wins and draws (home team vs away team)
+3. **H2H results table** — every prior meeting under the current filters
+4. **Last 10 games** — separate tables for each team in the fixture
 
 *[Placeholder: two teams you plan to demo — e.g. USA vs Mexico or your choice]*
 
@@ -253,17 +218,21 @@ h2h_summary(team_a, team_b, data = played_results)
 
 ## From description to a naive forecast
 
-The Shiny tab answers **what happened** between two countries.
+The dashboard answers **what happened** between two countries.
 
-The simplest “prediction” step: **use those same counts as probabilities**
+The simplest “prediction” step: **turn head-to-head counts into probabilities**
 
 $$
-P(\text{A wins}) \approx \frac{\text{A wins in past meetings}}{n}, \quad
-P(\text{draw}) \approx \frac{\text{draws}}{n}, \quad
-P(\text{B wins}) \approx \frac{\text{B wins}}{n}
+\begin{aligned}
+P(\text{A wins}) &\approx \frac{w_A}{n} \\
+P(\text{draw})   &\approx \frac{d}{n} \\
+P(\text{B wins}) &\approx \frac{w_B}{n}
+\end{aligned}
 $$
 
-No training step — just **historical frequencies** (works with match-level CSV / BigQuery only).
+where $n = w_A + d + w_B$ — wins and draws from filtered past meetings.
+
+No training step — just **historical frequencies** from match-level data.
 
 ::: {.notes}
 Emphasize: this is a teaching sketch, not a betting model. Small $n$ → noisy.
@@ -415,23 +384,11 @@ ggplot(probs, aes(x = outcome, y = rate, fill = outcome)) +
 Same pattern as other course apps:
 
 1. `rsconnect::writeManifest()` next to `app.R`
-2. Push `app.R`, `manifest.json`, **`data/international/`**
-3. Connect restores packages from `manifest.json`
+2. Push `app.R`, `manifest.json`, **`data/international/`** (upload source + CSV fallback)
+3. Set **`USE_BIGQUERY=TRUE`** and GCP env vars as Connect variables (not in git)
+4. Connect restores packages from `manifest.json`
 
 *[Placeholder: Connect deploy URL or dashboard screenshot]*
-
----
-
-## Optional v2 — `DATA_SOURCE` flag
-
-Middle ground (describe on a slide; build after the talk if needed):
-
-```r
-# DATA_SOURCE=local  -> read.csv (current)
-# DATA_SOURCE=bq     -> bq_table_download once at startup
-```
-
-Load **all** tables to BQ first; align types with existing `app.R` prep.
 
 ---
 
@@ -439,8 +396,8 @@ Load **all** tables to BQ first; align types with existing `app.R` prep.
 
 - [ ] Elo or `glm()` on `played_results` (first step beyond naive frequencies)
 - [ ] Parquet upload script (StatsBomb-style thread from the abstract)
-- [ ] `goalscorers` (and shootouts) into BigQuery
-- [ ] BQ-backed Shiny when auth is stable on Connect
+- [ ] `goalscorers` (and shootouts) into BigQuery for richer views
+- [ ] Additional dashboard tabs (overview, teams, goalscorers) on top of the WC fixture view
 - [ ] Looker Studio (or similar) on published tables
 
 ---
