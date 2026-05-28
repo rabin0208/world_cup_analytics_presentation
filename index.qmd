@@ -281,6 +281,8 @@ Optional live run in RStudio (~10-20 s) to show row count after load.
 ## Upload script
 
 ```r
+gcs_auth(json_file = cred_path)
+gcs_global_bucket(bucket)
 gcs_upload(local_csv, name = gcs_object)
 results <- read_csv(
   local_csv,
@@ -317,6 +319,7 @@ In **BigQuery → `analytics` → `international_results`**:
 At startup, `app.R` loads match history with `bq_table_download()`:
 
 ```r
+bq_auth(path = cred_path)
 dest <- bq_table(project_id, "analytics", "international_results")
 results <- bq_table_download(dest, bigint = "integer")
 ```

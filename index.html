@@ -545,23 +545,25 @@ Rabindranath Duran Pons
 </section>
 <section id="upload-script" class="slide level2">
 <h2>Upload script</h2>
-<div class="sourceCode" id="cb2"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href=""></a><span class="fu">gcs_upload</span>(local_csv, <span class="at">name =</span> gcs_object)</span>
-<span id="cb2-2"><a href=""></a>results <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(</span>
-<span id="cb2-3"><a href=""></a>  local_csv,</span>
-<span id="cb2-4"><a href=""></a>  <span class="at">na =</span> <span class="fu">c</span>(<span class="st">""</span>, <span class="st">"NA"</span>),</span>
-<span id="cb2-5"><a href=""></a>  <span class="at">col_types =</span> <span class="fu">cols</span>(</span>
-<span id="cb2-6"><a href=""></a>    <span class="at">date =</span> <span class="fu">col_date</span>(),</span>
-<span id="cb2-7"><a href=""></a>    <span class="at">home_score =</span> <span class="fu">col_integer</span>(),</span>
-<span id="cb2-8"><a href=""></a>    <span class="at">away_score =</span> <span class="fu">col_integer</span>(),</span>
-<span id="cb2-9"><a href=""></a>    <span class="at">neutral =</span> <span class="fu">col_logical</span>(),</span>
-<span id="cb2-10"><a href=""></a>    <span class="at">.default =</span> <span class="fu">col_character</span>()</span>
-<span id="cb2-11"><a href=""></a>  )</span>
-<span id="cb2-12"><a href=""></a>)</span>
-<span id="cb2-13"><a href=""></a><span class="fu">bq_table_upload</span>(</span>
-<span id="cb2-14"><a href=""></a>  <span class="fu">bq_table</span>(project_id, <span class="st">"analytics"</span>, <span class="st">"international_results"</span>),</span>
-<span id="cb2-15"><a href=""></a>  results,</span>
-<span id="cb2-16"><a href=""></a>  <span class="at">write_disposition =</span> <span class="st">"WRITE_TRUNCATE"</span></span>
-<span id="cb2-17"><a href=""></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href=""></a><span class="fu">gcs_auth</span>(<span class="at">json_file =</span> cred_path)</span>
+<span id="cb2-2"><a href=""></a><span class="fu">gcs_global_bucket</span>(bucket)</span>
+<span id="cb2-3"><a href=""></a><span class="fu">gcs_upload</span>(local_csv, <span class="at">name =</span> gcs_object)</span>
+<span id="cb2-4"><a href=""></a>results <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(</span>
+<span id="cb2-5"><a href=""></a>  local_csv,</span>
+<span id="cb2-6"><a href=""></a>  <span class="at">na =</span> <span class="fu">c</span>(<span class="st">""</span>, <span class="st">"NA"</span>),</span>
+<span id="cb2-7"><a href=""></a>  <span class="at">col_types =</span> <span class="fu">cols</span>(</span>
+<span id="cb2-8"><a href=""></a>    <span class="at">date =</span> <span class="fu">col_date</span>(),</span>
+<span id="cb2-9"><a href=""></a>    <span class="at">home_score =</span> <span class="fu">col_integer</span>(),</span>
+<span id="cb2-10"><a href=""></a>    <span class="at">away_score =</span> <span class="fu">col_integer</span>(),</span>
+<span id="cb2-11"><a href=""></a>    <span class="at">neutral =</span> <span class="fu">col_logical</span>(),</span>
+<span id="cb2-12"><a href=""></a>    <span class="at">.default =</span> <span class="fu">col_character</span>()</span>
+<span id="cb2-13"><a href=""></a>  )</span>
+<span id="cb2-14"><a href=""></a>)</span>
+<span id="cb2-15"><a href=""></a><span class="fu">bq_table_upload</span>(</span>
+<span id="cb2-16"><a href=""></a>  <span class="fu">bq_table</span>(project_id, <span class="st">"analytics"</span>, <span class="st">"international_results"</span>),</span>
+<span id="cb2-17"><a href=""></a>  results,</span>
+<span id="cb2-18"><a href=""></a>  <span class="at">write_disposition =</span> <span class="st">"WRITE_TRUNCATE"</span></span>
+<span id="cb2-19"><a href=""></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section>
 <section id="step-7-verify-in-bigquery" class="slide level2">
 <h2>Step 7: Verify in BigQuery</h2>
@@ -574,8 +576,9 @@ Rabindranath Duran Pons
 <section id="shiny-reads-from-bigquery" class="slide level2">
 <h2>Shiny reads from BigQuery</h2>
 <p>At startup, <code>app.R</code> loads match history with <code>bq_table_download()</code>:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href=""></a>dest <span class="ot">&lt;-</span> <span class="fu">bq_table</span>(project_id, <span class="st">"analytics"</span>, <span class="st">"international_results"</span>)</span>
-<span id="cb3-2"><a href=""></a>results <span class="ot">&lt;-</span> <span class="fu">bq_table_download</span>(dest, <span class="at">bigint =</span> <span class="st">"integer"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href=""></a><span class="fu">bq_auth</span>(<span class="at">path =</span> cred_path)</span>
+<span id="cb3-2"><a href=""></a>dest <span class="ot">&lt;-</span> <span class="fu">bq_table</span>(project_id, <span class="st">"analytics"</span>, <span class="st">"international_results"</span>)</span>
+<span id="cb3-3"><a href=""></a>results <span class="ot">&lt;-</span> <span class="fu">bq_table_download</span>(dest, <span class="at">bigint =</span> <span class="st">"integer"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>Set in <code>.env</code> on Connect (or locally):</p>
 <ul>
 <li><code>USE_BIGQUERY=TRUE</code></li>
