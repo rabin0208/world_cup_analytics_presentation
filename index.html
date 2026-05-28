@@ -343,37 +343,64 @@ Rabindranath Duran Pons
 </thead>
 <tbody>
 <tr class="odd">
+<td>0</td>
+<td>Start Google Cloud free trial</td>
+</tr>
+<tr class="even">
 <td>1</td>
 <td>Create project</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>2</td>
 <td>Enable BigQuery + Cloud Storage APIs</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>3</td>
 <td>Create dataset <code>analytics</code> or similar</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>4</td>
 <td>Create bucket <code>football-analytics</code> (or similar)</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>5</td>
 <td>Service account + download JSON key</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>6</td>
 <td>Run <code>upload_international_results.R</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>7</td>
-<td>Point <code>.env</code> at project and verify table</td>
+<td>Verify table in BigQuery</td>
 </tr>
 </tbody>
 </table>
 <aside class="notes">
 <p>This block is the “how to reproduce the warehouse” walkthrough. Use light-mode screenshots.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="step-0-google-cloud-free-trial" class="slide level2">
+<h2>Step 0: Google Cloud free trial</h2>
+<p>Go to <a href="https://cloud.google.com/free">cloud.google.com/free</a> and sign in with a Google account.</p>
+<ul>
+<li><strong>Free trial:</strong> new users get about <strong>$300 in credits</strong> (for 90 days)</li>
+<li><strong>Credit card required:</strong> used for identity verification and you are not billed for standard trial usage within the free tier/credits</li>
+<li><strong>After credits:</strong> delete the GCP project if you are done and do not want any further charges (or set billing budgets/alerts first)</li>
+</ul>
+<p>For this project, BigQuery + Cloud Storage usage on one <code>results.csv</code> stays well inside trial credits.</p>
+<aside class="notes">
+<p>Mention: students can use a personal Gmail; cancel or delete the project after the course if they do not need GCP anymore.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -556,71 +583,39 @@ Rabindranath Duran Pons
           display:block!important;
       }</style></aside>
 </section>
-<section id="explore-logic-first-ui-second" class="slide level2">
-<h2>Explore: logic first, UI second</h2>
-<p><strong>World Cup Analytics</strong> (<code>app.R</code>) is a thin Shiny layer over plain R functions in <code>src/R/analytics.R</code>.</p>
-<ul>
-<li>Inputs (fixture + scope) trigger <strong>reactives</strong></li>
-<li>Outputs (chart + tables) call the same <strong>dplyr</strong> helpers every time</li>
-<li>No special query language: regular <strong>tidyverse</strong> on a data frame</li>
-</ul>
-
-<img data-src="images/01-h2h-barchart.png" style="width:78.0%" alt="H2H bar chart output from dplyr summaries." class="r-stretch"></section>
-<section id="prep-with-regular-tidyverse" class="slide level2">
-<h2>Prep with regular tidyverse</h2>
-<p>After load (CSV or BigQuery), <code>app.R</code> builds views with standard verbs:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href=""></a>wc_results <span class="ot">&lt;-</span> results <span class="sc">|&gt;</span> <span class="fu">filter</span>(<span class="fu">is_wc_tournament</span>(tournament))</span>
-<span id="cb4-2"><a href=""></a>wc_played <span class="ot">&lt;-</span> wc_results <span class="sc">|&gt;</span> <span class="fu">filter</span>(<span class="fu">is_played</span>(home_score, away_score))</span>
-<span id="cb4-3"><a href=""></a>wc_upcoming <span class="ot">&lt;-</span> wc_results <span class="sc">|&gt;</span></span>
-<span id="cb4-4"><a href=""></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is_played</span>(home_score, away_score)) <span class="sc">|&gt;</span></span>
-<span id="cb4-5"><a href=""></a>  <span class="fu">arrange</span>(date, home_team)</span>
-<span id="cb4-6"><a href=""></a>played_results <span class="ot">&lt;-</span> results <span class="sc">|&gt;</span> <span class="fu">filter</span>(<span class="fu">is_played</span>(home_score, away_score))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p><strong>Idea:</strong> separate <em>played history</em>, <em>upcoming fixtures</em>, and <em>World Cup scope</em> before any UI renders.</p>
-</section>
-<section id="head-to-head-filter-arrange" class="slide level2">
-<h2>Head-to-head: <code>filter</code> + <code>arrange</code></h2>
-<p><code>h2h_matches()</code> keeps meetings between the two teams, newest first:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href=""></a>h2h_matches <span class="ot">&lt;-</span> <span class="cf">function</span>(team_a, team_b, data) {</span>
-<span id="cb5-2"><a href=""></a>  data <span class="sc">|&gt;</span></span>
-<span id="cb5-3"><a href=""></a>    <span class="fu">filter</span>(</span>
-<span id="cb5-4"><a href=""></a>      (home_team <span class="sc">==</span> team_a <span class="sc">&amp;</span> away_team <span class="sc">==</span> team_b) <span class="sc">|</span></span>
-<span id="cb5-5"><a href=""></a>        (home_team <span class="sc">==</span> team_b <span class="sc">&amp;</span> away_team <span class="sc">==</span> team_a)</span>
-<span id="cb5-6"><a href=""></a>    ) <span class="sc">|&gt;</span></span>
-<span id="cb5-7"><a href=""></a>    <span class="fu">arrange</span>(<span class="fu">desc</span>(date))</span>
-<span id="cb5-8"><a href=""></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p><code>h2h_summary()</code> counts wins/draws from each team’s perspective (home or away in that row).</p>
-</section>
-<section id="scope-filter-all-competitions-vs-world-cup" class="slide level2">
-<h2>Scope filter: all competitions vs World Cup</h2>
-<p>User picks scope in the sidebar; the server applies one more <code>filter</code>:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href=""></a>d <span class="ot">&lt;-</span> <span class="fu">h2h_matches</span>(fx<span class="sc">$</span>home_team, fx<span class="sc">$</span>away_team, played_results)</span>
-<span id="cb6-2"><a href=""></a><span class="cf">if</span> (<span class="fu">identical</span>(input<span class="sc">$</span>h2h_scope, <span class="st">"wc"</span>)) {</span>
-<span id="cb6-3"><a href=""></a>  d <span class="ot">&lt;-</span> d <span class="sc">|&gt;</span> <span class="fu">filter</span>(<span class="fu">is_wc_tournament</span>(tournament))</span>
-<span id="cb6-4"><a href=""></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p>Same pattern for <strong>last 10 games</strong> tables per team.</p>
-</section>
-<section id="recent-form-slice_head-mutate-select" class="slide level2">
-<h2>Recent form: <code>slice_head</code> + <code>mutate</code> + <code>select</code></h2>
-<div class="sourceCode" id="cb7"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href=""></a>team_last_matches <span class="ot">&lt;-</span> <span class="cf">function</span>(team_name, played_results, scope) {</span>
-<span id="cb7-2"><a href=""></a>  d <span class="ot">&lt;-</span> played_results <span class="sc">|&gt;</span></span>
-<span id="cb7-3"><a href=""></a>    <span class="fu">filter</span>(home_team <span class="sc">==</span> team_name <span class="sc">|</span> away_team <span class="sc">==</span> team_name)</span>
-<span id="cb7-4"><a href=""></a>  <span class="cf">if</span> (<span class="fu">identical</span>(scope, <span class="st">"wc"</span>)) {</span>
-<span id="cb7-5"><a href=""></a>    d <span class="ot">&lt;-</span> d <span class="sc">|&gt;</span> <span class="fu">filter</span>(<span class="fu">is_wc_tournament</span>(tournament))</span>
-<span id="cb7-6"><a href=""></a>  }</span>
-<span id="cb7-7"><a href=""></a>  d <span class="sc">|&gt;</span></span>
-<span id="cb7-8"><a href=""></a>    <span class="fu">arrange</span>(<span class="fu">desc</span>(date)) <span class="sc">|&gt;</span></span>
-<span id="cb7-9"><a href=""></a>    <span class="fu">slice_head</span>(<span class="at">n =</span> <span class="dv">10</span>) <span class="sc">|&gt;</span></span>
-<span id="cb7-10"><a href=""></a>    <span class="fu">mutate</span>(</span>
-<span id="cb7-11"><a href=""></a>      <span class="at">Result =</span> <span class="fu">sprintf</span>(<span class="st">"%d - %d"</span>, home_score, away_score),</span>
-<span id="cb7-12"><a href=""></a>      <span class="at">Venue =</span> <span class="fu">ifelse</span>(home_team <span class="sc">==</span> team_name, <span class="st">"Home"</span>, <span class="st">"Away"</span>),</span>
-<span id="cb7-13"><a href=""></a>      <span class="at">Opponent =</span> <span class="fu">ifelse</span>(home_team <span class="sc">==</span> team_name, away_team, home_team)</span>
-<span id="cb7-14"><a href=""></a>    ) <span class="sc">|&gt;</span></span>
-<span id="cb7-15"><a href=""></a>    <span class="fu">select</span>(<span class="at">Date =</span> date, Team, Opponent, Result, Venue,</span>
-<span id="cb7-16"><a href=""></a>           <span class="at">Tournament =</span> tournament, <span class="at">City =</span> city)</span>
-<span id="cb7-17"><a href=""></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p><strong>Takeaway:</strong> the dashboard is a viewer; the analysis is dplyr you could run in a script or Quarto doc.</p>
+<section id="the-repo-four-r-modules-upload" class="slide level2">
+<h2>The repo: four R modules (+ upload)</h2>
+<p><code>src/app.R</code> sources four scripts under <code>src/R/</code>:</p>
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th>Script</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>config.R</code></td>
+<td>Find project root, load <code>results</code> from CSV or BigQuery</td>
+</tr>
+<tr class="even">
+<td><code>analytics.R</code></td>
+<td>dplyr helpers: H2H, last 10 games, fixture labels</td>
+</tr>
+<tr class="odd">
+<td><code>ui.R</code></td>
+<td>bslib layout (sidebar, cards, outputs)</td>
+</tr>
+<tr class="even">
+<td><code>server.R</code></td>
+<td>Reactives: wire inputs to helpers and plots</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Separate pipeline script:</strong> <code>src/upload_international_results.R</code> (GCS + BigQuery refresh).</p>
+<p>Root <code>app.R</code> is a one-line launcher: <code>shiny::shinyAppDir("src")</code>.</p>
 <aside class="notes">
-<p>Optional live demo: run <code>h2h_matches("Mexico", "South Africa", played_results)</code> in the console to show the table behind the chart.</p>
+<p>Say: “Four files split concerns; tonight we focus on config + analytics, not every UI detail.”</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -632,6 +627,48 @@ Rabindranath Duran Pons
           overflow: hidden!important;
           display:block!important;
       }</style></aside>
+</section>
+<section id="deep-dive-load-and-prep-config.r-app.r" class="slide level2">
+<h2>Deep dive: load and prep (<code>config.R</code> + <code>app.R</code>)</h2>
+<p><code>load_results()</code> picks the source; <code>prepare_results()</code> adds <code>date</code>, <code>year</code>, and flags. Helpers below live in <code>analytics.R</code> and are sourced before <code>app.R</code> runs:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href=""></a>is_wc_tournament <span class="ot">&lt;-</span> <span class="cf">function</span>(x) {</span>
+<span id="cb4-2"><a href=""></a>  <span class="fu">grepl</span>(<span class="st">"FIFA World Cup"</span>, x, <span class="at">fixed =</span> <span class="cn">TRUE</span>) <span class="sc">&amp;</span></span>
+<span id="cb4-3"><a href=""></a>    <span class="sc">!</span><span class="fu">grepl</span>(<span class="st">"qualification"</span>, x, <span class="at">ignore.case =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb4-4"><a href=""></a>}</span>
+<span id="cb4-5"><a href=""></a>is_played <span class="ot">&lt;-</span> <span class="cf">function</span>(home_score, away_score) {</span>
+<span id="cb4-6"><a href=""></a>  <span class="sc">!</span><span class="fu">is.na</span>(home_score) <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">is.na</span>(away_score)</span>
+<span id="cb4-7"><a href=""></a>}</span>
+<span id="cb4-8"><a href=""></a></span>
+<span id="cb4-9"><a href=""></a>wc_results <span class="ot">&lt;-</span> results <span class="sc">|&gt;</span> <span class="fu">filter</span>(<span class="fu">is_wc_tournament</span>(tournament))</span>
+<span id="cb4-10"><a href=""></a>wc_played <span class="ot">&lt;-</span> wc_results <span class="sc">|&gt;</span> <span class="fu">filter</span>(<span class="fu">is_played</span>(home_score, away_score))</span>
+<span id="cb4-11"><a href=""></a>wc_upcoming <span class="ot">&lt;-</span> wc_results <span class="sc">|&gt;</span></span>
+<span id="cb4-12"><a href=""></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is_played</span>(home_score, away_score)) <span class="sc">|&gt;</span></span>
+<span id="cb4-13"><a href=""></a>  <span class="fu">arrange</span>(date, home_team)</span>
+<span id="cb4-14"><a href=""></a>played_results <span class="ot">&lt;-</span> results <span class="sc">|&gt;</span> <span class="fu">filter</span>(<span class="fu">is_played</span>(home_score, away_score))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p><strong>Idea:</strong> separate <em>played history</em>, <em>upcoming fixtures</em>, and <em>World Cup scope</em> before <code>ui.R</code> / <code>server.R</code> render anything.</p>
+</section>
+<section id="deep-dive-head-to-head-analytics.r" class="slide level2">
+<h2>Deep dive: head-to-head (<code>analytics.R</code>)</h2>
+<p><code>h2h_matches()</code> keeps meetings between the two teams, newest first:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href=""></a>h2h_matches <span class="ot">&lt;-</span> <span class="cf">function</span>(team_a, team_b, data) {</span>
+<span id="cb5-2"><a href=""></a>  data <span class="sc">|&gt;</span></span>
+<span id="cb5-3"><a href=""></a>    <span class="fu">filter</span>(</span>
+<span id="cb5-4"><a href=""></a>      (home_team <span class="sc">==</span> team_a <span class="sc">&amp;</span> away_team <span class="sc">==</span> team_b) <span class="sc">|</span></span>
+<span id="cb5-5"><a href=""></a>        (home_team <span class="sc">==</span> team_b <span class="sc">&amp;</span> away_team <span class="sc">==</span> team_a)</span>
+<span id="cb5-6"><a href=""></a>    ) <span class="sc">|&gt;</span></span>
+<span id="cb5-7"><a href=""></a>    <span class="fu">arrange</span>(<span class="fu">desc</span>(date))</span>
+<span id="cb5-8"><a href=""></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p><code>h2h_summary()</code> counts wins/draws from each team’s perspective (home or away in that row).</p>
+</section>
+<section id="deep-dive-scope-filter-server.r" class="slide level2">
+<h2>Deep dive: scope filter (<code>server.R</code>)</h2>
+<p>User picks scope in the sidebar and <code>server.R</code> applies one more <code>filter</code> on top of <code>analytics.R</code>:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href=""></a>d <span class="ot">&lt;-</span> <span class="fu">h2h_matches</span>(fx<span class="sc">$</span>home_team, fx<span class="sc">$</span>away_team, played_results)</span>
+<span id="cb6-2"><a href=""></a><span class="cf">if</span> (<span class="fu">identical</span>(input<span class="sc">$</span>h2h_scope, <span class="st">"wc"</span>)) {</span>
+<span id="cb6-3"><a href=""></a>  d <span class="ot">&lt;-</span> d <span class="sc">|&gt;</span> <span class="fu">filter</span>(<span class="fu">is_wc_tournament</span>(tournament))</span>
+<span id="cb6-4"><a href=""></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p><strong>Takeaway:</strong> <code>ui.R</code> and <code>server.R</code> display results; the analysis lives in <code>analytics.R</code> and runs the same in a plain script.</p>
+<p>Same pattern for <strong>last 10 games</strong> tables per team.</p>
 </section>
 <section id="from-description-to-a-naive-forecast" class="slide level2">
 <h2>From description to a naive forecast</h2>
@@ -665,7 +702,7 @@ P(\text{B wins}) &amp;\approx \frac{w_B}{n}
 <p>Before trusting a rivalry’s history, know the <strong>base rates</strong> in the full results file:</p>
 
 <img data-src="index_files/figure-revealjs/fig-baseline-rates-1.png" width="672" class="r-stretch quarto-figure-center" id="fig-baseline-rates"><p class="caption">
-Figure&nbsp;1: Share of home win, draw, and away win
+Figure&nbsp;1: Share of home win, draw, and away win (all played internationals)
 </p><p><strong>Benchmark:</strong> any fancier model should beat “always predict home win” on out-of-sample matches.</p>
 </section>
 <section id="example-mexico-vs-south-africa-empirical-h2h" class="slide level2">
@@ -722,7 +759,7 @@ Figure&nbsp;2: Naive win/draw probabilities from head-to-head history
 <p><strong>This deck:</strong></p>
 <p><a href="https://github.com/rabin0208/world_cup_analytics_presentation">https://github.com/rabin0208/world_cup_analytics_presentation</a></p>
 <p>Render with Quarto:</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode numberSource bash number-lines code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href=""></a><span class="ex">quarto</span> render index.qmd</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode numberSource bash number-lines code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href=""></a><span class="ex">quarto</span> render index.qmd</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section></section>
 <section id="thank-you" class="title-slide slide level1 center">
 <h1>Thank you!</h1>

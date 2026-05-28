@@ -100,16 +100,33 @@ Before the upload script, create a personal GCP project with **BigQuery** and **
 
 | Step | Console task |
 |------|----------------|
+| 0 | Start Google Cloud free trial |
 | 1 | Create project |
 | 2 | Enable BigQuery + Cloud Storage APIs |
 | 3 | Create dataset `analytics` or similar |
 | 4 | Create bucket `football-analytics` (or similar) |
 | 5 | Service account + download JSON key |
 | 6 | Run `upload_international_results.R` |
-| 7 | Point `.env` at project and verify table |
+| 7 | Verify table in BigQuery |
 
 ::: {.notes}
 This block is the “how to reproduce the warehouse” walkthrough. Use light-mode screenshots.
+:::
+
+---
+
+## Step 0: Google Cloud free trial
+
+Go to [cloud.google.com/free](https://cloud.google.com/free) and sign in with a Google account.
+
+- **Free trial:** new users get about **$300 in credits** (for 90 days)
+- **Credit card required:** used for identity verification and you are not billed for standard trial usage within the free tier/credits
+- **After credits:** delete the GCP project if you are done and do not want any further charges (or set billing budgets/alerts first)
+
+For this project, BigQuery + Cloud Storage usage on one `results.csv` stays well inside trial credits.
+
+::: {.notes}
+Mention: students can use a personal Gmail; cancel or delete the project after the course if they do not need GCP anymore.
 :::
 
 ---
@@ -313,23 +330,40 @@ Say: "The warehouse is the source of truth; dplyr logic is unchanged after the d
 
 ---
 
-## Explore: logic first, UI second
+## The repo: four R modules (+ upload)
 
-**World Cup Analytics** (`app.R`) is a thin Shiny layer over plain R functions in `src/R/analytics.R`.
+ `src/app.R` sources four scripts under `src/R/`:
 
-- Inputs (fixture + scope) trigger **reactives**
-- Outputs (chart + tables) call the same **dplyr** helpers every time
-- No special query language: regular **tidyverse** on a data frame
+| Script | Role |
+|--------|------|
+| `config.R` | Find project root, load `results` from CSV or BigQuery |
+| `analytics.R` | dplyr helpers: H2H, last 10 games, fixture labels |
+| `ui.R` | bslib layout (sidebar, cards, outputs) |
+| `server.R` | Reactives: wire inputs to helpers and plots |
 
-![](images/01-h2h-barchart.png){fig-alt="H2H bar chart output from dplyr summaries." width="78%"}
+**Separate pipeline script:** `src/upload_international_results.R` (GCS + BigQuery refresh).
+
+Root `app.R` is a one-line launcher: `shiny::shinyAppDir("src")`.
+
+::: {.notes}
+Say: "Four files split concerns; tonight we focus on config + analytics, not every UI detail."
+:::
 
 ---
 
-## Prep with regular tidyverse
+## Deep dive: load and prep (`config.R` + `app.R`)
 
-After load (CSV or BigQuery), `app.R` builds views with standard verbs:
+`load_results()` picks the source; `prepare_results()` adds `date`, `year`, and flags. Helpers below live in `analytics.R` and are sourced before `app.R` runs:
 
 ```r
+is_wc_tournament <- function(x) {
+  grepl("FIFA World Cup", x, fixed = TRUE) &
+    !grepl("qualification", x, ignore.case = TRUE)
+}
+is_played <- function(home_score, away_score) {
+  !is.na(home_score) & !is.na(away_score)
+}
+
 wc_results <- results |> filter(is_wc_tournament(tournament))
 wc_played <- wc_results |> filter(is_played(home_score, away_score))
 wc_upcoming <- wc_results |>
@@ -338,11 +372,11 @@ wc_upcoming <- wc_results |>
 played_results <- results |> filter(is_played(home_score, away_score))
 ```
 
-**Idea:** separate *played history*, *upcoming fixtures*, and *World Cup scope* before any UI renders.
+**Idea:** separate *played history*, *upcoming fixtures*, and *World Cup scope* before `ui.R` / `server.R` render anything.
 
 ---
 
-## Head-to-head: `filter` + `arrange`
+## Deep dive: head-to-head (`analytics.R`)
 
 `h2h_matches()` keeps meetings between the two teams, newest first:
 
@@ -361,9 +395,9 @@ h2h_matches <- function(team_a, team_b, data) {
 
 ---
 
-## Scope filter: all competitions vs World Cup
+## Deep dive: scope filter (`server.R`)
 
-User picks scope in the sidebar; the server applies one more `filter`:
+User picks scope in the sidebar and `server.R` applies one more `filter` on top of `analytics.R`:
 
 ```r
 d <- h2h_matches(fx$home_team, fx$away_team, played_results)
@@ -372,37 +406,9 @@ if (identical(input$h2h_scope, "wc")) {
 }
 ```
 
+**Takeaway:** `ui.R` and `server.R` display results; the analysis lives in `analytics.R` and runs the same in a plain script.
+
 Same pattern for **last 10 games** tables per team.
-
----
-
-## Recent form: `slice_head` + `mutate` + `select`
-
-```r
-team_last_matches <- function(team_name, played_results, scope) {
-  d <- played_results |>
-    filter(home_team == team_name | away_team == team_name)
-  if (identical(scope, "wc")) {
-    d <- d |> filter(is_wc_tournament(tournament))
-  }
-  d |>
-    arrange(desc(date)) |>
-    slice_head(n = 10) |>
-    mutate(
-      Result = sprintf("%d - %d", home_score, away_score),
-      Venue = ifelse(home_team == team_name, "Home", "Away"),
-      Opponent = ifelse(home_team == team_name, away_team, home_team)
-    ) |>
-    select(Date = date, Team, Opponent, Result, Venue,
-           Tournament = tournament, City = city)
-}
-```
-
-**Takeaway:** the dashboard is a viewer; the analysis is dplyr you could run in a script or Quarto doc.
-
-::: {.notes}
-Optional live demo: run `h2h_matches("Mexico", "South Africa", played_results)` in the console to show the table behind the chart.
-:::
 
 ---
 
@@ -436,16 +442,31 @@ Before trusting a rivalry’s history, know the **base rates** in the full resul
 
 ```{r}
 #| label: fig-baseline-rates
-#| fig-cap: "Share of home win, draw, and away win"
+#| fig-cap: "Share of home win, draw, and away win (all played internationals)"
 #| fig-width: 7
 #| fig-height: 3.5
 library(ggplot2)
 
-baseline <- data.frame(
-  outcome = factor(c("Home win", "Draw", "Away win"),
-                   levels = c("Home win", "Draw", "Away win")),
-  rate = c(0.50, 0.25, 0.25)
-)
+data_path <- file.path("..", "world_cup_analytics", "data", "international", "results.csv")
+if (file.exists(data_path)) {
+  raw <- read.csv(data_path, stringsAsFactors = FALSE, na.strings = c("", "NA"))
+  played <- raw[!is.na(raw$home_score) & !is.na(raw$away_score), ]
+  hw <- sum(played$home_score > played$away_score)
+  dr <- sum(played$home_score == played$away_score)
+  aw <- sum(played$home_score < played$away_score)
+  n <- nrow(played)
+  baseline <- data.frame(
+    outcome = factor(c("Home win", "Draw", "Away win"),
+                     levels = c("Home win", "Draw", "Away win")),
+    rate = c(hw, dr, aw) / n
+  )
+} else {
+  baseline <- data.frame(
+    outcome = factor(c("Home win", "Draw", "Away win"),
+                     levels = c("Home win", "Draw", "Away win")),
+    rate = c(0.48, 0.25, 0.27)
+  )
+}
 
 ggplot(baseline, aes(x = outcome, y = rate, fill = outcome)) +
   geom_col(alpha = 0.85, width = 0.6) +
