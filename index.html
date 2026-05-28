@@ -10,7 +10,7 @@
   <meta name="generator" content="quarto-1.7.33">
 
   <meta name="author" content="Rabindranath Duran Pons">
-  <meta name="dcterms.date" content="2026-05-27">
+  <meta name="dcterms.date" content="2026-05-28">
   <title>World Cup Analytics with R</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -210,7 +210,7 @@ Rabindranath Duran Pons
 </div>
 </div>
 
-  <p class="date">2026-05-27</p>
+  <p class="date">2026-05-28</p>
 </section>
 <section>
 <section id="what-can-history-tell-us-before-kickoff" class="title-slide slide level1 center">
@@ -394,8 +394,8 @@ Rabindranath Duran Pons
 <li><strong>Organization:</strong> No organization (for easier sharing)</li>
 <li><strong>Save the Project ID</strong> (e.g.&nbsp;<code>football-analytics-496219</code>):</li>
 </ul>
-<p><em>[Screenshot: <code>images/gcp/01-new-project.png</code>: New Project dialog with name and Project ID]</em></p>
-</section>
+
+<img data-src="images/03-new-project.png" style="width:88.0%" alt="GCP new project screen." class="r-stretch"></section>
 <section id="step-2-enable-apis" class="slide level2">
 <h2>Step 2: Enable APIs</h2>
 <p>In the console, open <strong>APIs &amp; Services → Library</strong> and enable:</p>
@@ -404,42 +404,69 @@ Rabindranath Duran Pons
 <li><strong>Cloud Storage API</strong></li>
 </ul>
 <p>Filter by name if needed and click <strong>Enable</strong> on each.</p>
-<p><em>[Screenshot: <code>images/gcp/02-enable-apis.png</code>: API Library with BigQuery and Cloud Storage enabled]</em></p>
-</section>
+
+<img data-src="images/04-enable-apis.png" style="width:88.0%" alt="Enable BigQuery and Cloud Storage APIs in GCP." class="r-stretch"></section>
 <section id="step-3-create-the-bigquery-dataset" class="slide level2">
 <h2>Step 3: Create the BigQuery dataset</h2>
-<p>Open <strong>BigQuery → Explorer → your project → Create dataset</strong>:</p>
+<p>In <strong>BigQuery → Explorer</strong>, select your project and click <strong>Create dataset</strong>.</p>
+
+<img data-src="images/05-create-dataset.png" style="width:88.0%" alt="BigQuery create dataset screen." class="r-stretch"><p>Then choose the name of your dataset.</p>
+</section>
+<section id="step-3-continued-create-the-bigquery-dataset" class="slide level2">
+<h2>Step 3 (continued): Create the BigQuery dataset</h2>
 <ul>
 <li><strong>Dataset ID:</strong> <code>analytics</code></li>
 <li><strong>Location:</strong> same region you will use for Storage (e.g.&nbsp;<code>US</code> or <code>northamerica-northeast1</code>)</li>
 </ul>
-<p>This project uses one curated table: <code>international_results</code> (created by the upload script).</p>
-<p><em>[Screenshot: <code>images/gcp/03-create-dataset.png</code>: Create dataset dialog, ID <code>analytics</code>]</em></p>
-</section>
+
+<img data-src="images/06-create-dataset2.png" style="width:88.0%" alt="BigQuery dataset created in Explorer." class="r-stretch"></section>
 <section id="step-4-create-the-gcs-bucket" class="slide level2">
 <h2>Step 4: Create the GCS bucket</h2>
-<p>Open <strong>Cloud Storage → Buckets → Create</strong>:</p>
+<p>Open <strong>Cloud Storage → Buckets</strong> and click <strong>Create</strong>.</p>
+
+<img data-src="images/07-create-bucket.png" style="width:88.0%" alt="Cloud Storage buckets page with Create bucket action." class="r-stretch"></section>
+<section id="step-4-continued-configure-bucket-name-and-region" class="slide level2">
+<h2>Step 4 (continued): Configure bucket name and region</h2>
 <ul>
-<li><strong>Name:</strong> <code>football-analytics-mds496219</code> (globally unique; add a suffix if taken, e.g.&nbsp;<code>-v2</code>)</li>
+<li><strong>Name:</strong> <code>football-analytics-496219</code></li>
 <li><strong>Location:</strong> match your BigQuery dataset region</li>
 </ul>
 <p>Upload script writes dated files under:</p>
 <p><code>raw/international/results/YYYY-MM-DD/results.csv</code></p>
-<p><em>[Screenshot: <code>images/gcp/04-create-bucket.png</code>: Create bucket screen with name and region]</em></p>
-</section>
+
+<img data-src="images/08-create-bucket2.png" style="width:88.0%" alt="Cloud Storage bucket naming and location settings." class="r-stretch"></section>
 <section id="step-5-service-account-and-json-key" class="slide level2">
 <h2>Step 5: Service account and JSON key</h2>
-<p><strong>IAM &amp; Admin → Service Accounts → Create service account</strong></p>
+<p>In <strong>IAM &amp; Admin → Service Accounts</strong>, click <strong>Create service account</strong>.</p>
+
+<img data-src="images/09-service-account.png" style="width:88.0%" alt="Service accounts page with Create service account action." class="r-stretch"></section>
+<section id="step-5-continued-name-account-and-set-permissions" class="slide level2">
+<h2>Step 5 (continued): Name account and set permissions</h2>
 <ul>
-<li>Name: e.g.&nbsp;<code>football-analytics-sa</code></li>
+<li>Name: e.g.&nbsp;<code>football-analytics</code></li>
 <li>Grant roles (minimum for this repo):
 <ul>
 <li><strong>BigQuery Admin</strong> (or BigQuery Data Editor + BigQuery Job User)</li>
 <li><strong>Storage Admin</strong> (or Storage Object Admin on the bucket)</li>
 </ul></li>
 </ul>
-<p><strong>Keys → Add key → Create new key → JSON</strong> → save as <code>service-account-key.json</code> in the repo root (gitignored).</p>
-<p><em>[Screenshot: <code>images/gcp/05-service-account.png</code>: Service account roles or Create key → JSON]</em></p>
+<div class="columns">
+<div class="column" style="width:50%;">
+<p><img data-src="images/10-service-account2.png" style="width:100.0%" alt="Service account naming step."></p>
+</div><div class="column" style="width:50%;">
+<p><img data-src="images/11-service-account3.png" style="width:100.0%" alt="Service account permissions step."></p>
+</div></div>
+</section>
+<section id="step-5-continued-add-service-account-key" class="slide level2">
+<h2>Step 5 (continued): Add service account key</h2>
+<p>Use the created service account to generate a JSON key for local auth:</p>
+<p><strong>Service Accounts → your account → Keys → Add key → Create new key → JSON</strong></p>
+<div class="columns">
+<div class="column" style="width:50%;">
+<p><img data-src="images/12-service-account4.png" style="width:100.0%" alt="Service account keys tab with add key action."></p>
+</div><div class="column" style="width:50%;">
+<p><img data-src="images/13-service-account5.png" style="width:100.0%" alt="Create JSON key dialog."></p>
+</div></div>
 </section>
 <section id="step-6-run-the-r-upload-script" class="slide level2">
 <h2>Step 6: Run the R upload script</h2>
@@ -450,7 +477,8 @@ Rabindranath Duran Pons
 <li>Uploads <code>data/international/results.csv</code> to your GCS prefix</li>
 <li>Loads into <code>YOUR_PROJECT_ID.analytics.international_results</code> (<code>WRITE_TRUNCATE</code>)</li>
 </ol>
-<p><em>[Screenshot: <code>images/gcp/06-gcs-upload.png</code>: Cloud Storage browser showing <code>raw/international/results/.../results.csv</code>]</em></p>
+<p>In Cloud Storage, confirm a dated object path appears under:</p>
+<p><code>raw/international/results/YYYY-MM-DD/results.csv</code></p>
 </section>
 <section id="upload-r-to-gcs-and-bigquery" class="slide level2">
 <h2>Upload: R to GCS and BigQuery</h2>
@@ -528,26 +556,71 @@ Rabindranath Duran Pons
           display:block!important;
       }</style></aside>
 </section>
-<section id="explore-shiny-dashboard" class="slide level2">
-<h2>Explore: Shiny dashboard</h2>
-<p><strong>World Cup Analytics</strong> (<code>app.R</code>)</p>
+<section id="explore-logic-first-ui-second" class="slide level2">
+<h2>Explore: logic first, UI second</h2>
+<p><strong>World Cup Analytics</strong> (<code>app.R</code>) is a thin Shiny layer over plain R functions in <code>src/R/analytics.R</code>.</p>
 <ul>
-<li>Single focused view: no multi-tab navigation</li>
-<li><strong>bslib</strong> sidebar + cards: fixture picker, H2H chart, match tables</li>
-<li>Same preprocessing after load from BigQuery (or CSV fallback): dates, <code>is_played</code>, World Cup flags</li>
+<li>Inputs (fixture + scope) trigger <strong>reactives</strong></li>
+<li>Outputs (chart + tables) call the same <strong>dplyr</strong> helpers every time</li>
+<li>No special query language: regular <strong>tidyverse</strong> on a data frame</li>
 </ul>
-<p><em>[Placeholder: app home: value boxes: 2026 fixtures / World Cup matches played]</em></p>
+
+<img data-src="images/01-h2h-barchart.png" style="width:78.0%" alt="H2H bar chart output from dplyr summaries." class="r-stretch"></section>
+<section id="prep-with-regular-tidyverse" class="slide level2">
+<h2>Prep with regular tidyverse</h2>
+<p>After load (CSV or BigQuery), <code>app.R</code> builds views with standard verbs:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href=""></a>wc_results <span class="ot">&lt;-</span> results <span class="sc">|&gt;</span> <span class="fu">filter</span>(<span class="fu">is_wc_tournament</span>(tournament))</span>
+<span id="cb4-2"><a href=""></a>wc_played <span class="ot">&lt;-</span> wc_results <span class="sc">|&gt;</span> <span class="fu">filter</span>(<span class="fu">is_played</span>(home_score, away_score))</span>
+<span id="cb4-3"><a href=""></a>wc_upcoming <span class="ot">&lt;-</span> wc_results <span class="sc">|&gt;</span></span>
+<span id="cb4-4"><a href=""></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is_played</span>(home_score, away_score)) <span class="sc">|&gt;</span></span>
+<span id="cb4-5"><a href=""></a>  <span class="fu">arrange</span>(date, home_team)</span>
+<span id="cb4-6"><a href=""></a>played_results <span class="ot">&lt;-</span> results <span class="sc">|&gt;</span> <span class="fu">filter</span>(<span class="fu">is_played</span>(home_score, away_score))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p><strong>Idea:</strong> separate <em>played history</em>, <em>upcoming fixtures</em>, and <em>World Cup scope</em> before any UI renders.</p>
 </section>
-<section id="sidebar-fixture-and-h2h-filters" class="slide level2">
-<h2>Sidebar: fixture and H2H filters</h2>
-<ul>
-<li><strong>Fixture</strong>: dropdown of unplayed 2026 group-stage matches from the loaded results</li>
-<li><strong>Head-to-head year range</strong>: slider over full history (1872 → today)</li>
-<li><strong>Competition</strong>: multi-select; leave empty for all competitions, or pick e.g.&nbsp;<em>FIFA World Cup</em> only</li>
-</ul>
-<p><em>[Placeholder: screenshot with fixture selected + competition filter applied]</em></p>
+<section id="head-to-head-filter-arrange" class="slide level2">
+<h2>Head-to-head: <code>filter</code> + <code>arrange</code></h2>
+<p><code>h2h_matches()</code> keeps meetings between the two teams, newest first:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href=""></a>h2h_matches <span class="ot">&lt;-</span> <span class="cf">function</span>(team_a, team_b, data) {</span>
+<span id="cb5-2"><a href=""></a>  data <span class="sc">|&gt;</span></span>
+<span id="cb5-3"><a href=""></a>    <span class="fu">filter</span>(</span>
+<span id="cb5-4"><a href=""></a>      (home_team <span class="sc">==</span> team_a <span class="sc">&amp;</span> away_team <span class="sc">==</span> team_b) <span class="sc">|</span></span>
+<span id="cb5-5"><a href=""></a>        (home_team <span class="sc">==</span> team_b <span class="sc">&amp;</span> away_team <span class="sc">==</span> team_a)</span>
+<span id="cb5-6"><a href=""></a>    ) <span class="sc">|&gt;</span></span>
+<span id="cb5-7"><a href=""></a>    <span class="fu">arrange</span>(<span class="fu">desc</span>(date))</span>
+<span id="cb5-8"><a href=""></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p><code>h2h_summary()</code> counts wins/draws from each team’s perspective (home or away in that row).</p>
+</section>
+<section id="scope-filter-all-competitions-vs-world-cup" class="slide level2">
+<h2>Scope filter: all competitions vs World Cup</h2>
+<p>User picks scope in the sidebar; the server applies one more <code>filter</code>:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href=""></a>d <span class="ot">&lt;-</span> <span class="fu">h2h_matches</span>(fx<span class="sc">$</span>home_team, fx<span class="sc">$</span>away_team, played_results)</span>
+<span id="cb6-2"><a href=""></a><span class="cf">if</span> (<span class="fu">identical</span>(input<span class="sc">$</span>h2h_scope, <span class="st">"wc"</span>)) {</span>
+<span id="cb6-3"><a href=""></a>  d <span class="ot">&lt;-</span> d <span class="sc">|&gt;</span> <span class="fu">filter</span>(<span class="fu">is_wc_tournament</span>(tournament))</span>
+<span id="cb6-4"><a href=""></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Same pattern for <strong>last 10 games</strong> tables per team.</p>
+</section>
+<section id="recent-form-slice_head-mutate-select" class="slide level2">
+<h2>Recent form: <code>slice_head</code> + <code>mutate</code> + <code>select</code></h2>
+<div class="sourceCode" id="cb7"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href=""></a>team_last_matches <span class="ot">&lt;-</span> <span class="cf">function</span>(team_name, played_results, scope) {</span>
+<span id="cb7-2"><a href=""></a>  d <span class="ot">&lt;-</span> played_results <span class="sc">|&gt;</span></span>
+<span id="cb7-3"><a href=""></a>    <span class="fu">filter</span>(home_team <span class="sc">==</span> team_name <span class="sc">|</span> away_team <span class="sc">==</span> team_name)</span>
+<span id="cb7-4"><a href=""></a>  <span class="cf">if</span> (<span class="fu">identical</span>(scope, <span class="st">"wc"</span>)) {</span>
+<span id="cb7-5"><a href=""></a>    d <span class="ot">&lt;-</span> d <span class="sc">|&gt;</span> <span class="fu">filter</span>(<span class="fu">is_wc_tournament</span>(tournament))</span>
+<span id="cb7-6"><a href=""></a>  }</span>
+<span id="cb7-7"><a href=""></a>  d <span class="sc">|&gt;</span></span>
+<span id="cb7-8"><a href=""></a>    <span class="fu">arrange</span>(<span class="fu">desc</span>(date)) <span class="sc">|&gt;</span></span>
+<span id="cb7-9"><a href=""></a>    <span class="fu">slice_head</span>(<span class="at">n =</span> <span class="dv">10</span>) <span class="sc">|&gt;</span></span>
+<span id="cb7-10"><a href=""></a>    <span class="fu">mutate</span>(</span>
+<span id="cb7-11"><a href=""></a>      <span class="at">Result =</span> <span class="fu">sprintf</span>(<span class="st">"%d - %d"</span>, home_score, away_score),</span>
+<span id="cb7-12"><a href=""></a>      <span class="at">Venue =</span> <span class="fu">ifelse</span>(home_team <span class="sc">==</span> team_name, <span class="st">"Home"</span>, <span class="st">"Away"</span>),</span>
+<span id="cb7-13"><a href=""></a>      <span class="at">Opponent =</span> <span class="fu">ifelse</span>(home_team <span class="sc">==</span> team_name, away_team, home_team)</span>
+<span id="cb7-14"><a href=""></a>    ) <span class="sc">|&gt;</span></span>
+<span id="cb7-15"><a href=""></a>    <span class="fu">select</span>(<span class="at">Date =</span> date, Team, Opponent, Result, Venue,</span>
+<span id="cb7-16"><a href=""></a>           <span class="at">Tournament =</span> tournament, <span class="at">City =</span> city)</span>
+<span id="cb7-17"><a href=""></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p><strong>Takeaway:</strong> the dashboard is a viewer; the analysis is dplyr you could run in a script or Quarto doc.</p>
 <aside class="notes">
-<p>Demo flow: pick a fixture → widen/narrow years → optionally filter to World Cup meetings only.</p>
+<p>Optional live demo: run <code>h2h_matches("Mexico", "South Africa", played_results)</code> in the console to show the table behind the chart.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -559,37 +632,6 @@ Rabindranath Duran Pons
           overflow: hidden!important;
           display:block!important;
       }</style></aside>
-</section>
-<section id="main-view-matchup-and-head-to-head" class="slide level2">
-<h2>Main view: matchup and head-to-head</h2>
-<p>For the selected fixture:</p>
-<ol type="1">
-<li><strong>Matchup card</strong>: date, city, neutral vs non-neutral venue</li>
-<li><strong>H2H bar chart</strong>: wins and draws (home team vs away team)</li>
-<li><strong>H2H results table</strong>: every prior meeting under the current filters</li>
-<li><strong>Last 10 games</strong>: separate tables for each team in the fixture</li>
-</ol>
-<p><em>[Placeholder: two teams you plan to demo: e.g.&nbsp;USA vs Mexico or your choice]</em></p>
-<aside class="notes">
-<p>Rehearse this path. Narrate “history before kickoff.”</p>
-<style type="text/css">
-        span.MJX_Assistive_MathML {
-          position:absolute!important;
-          clip: rect(1px, 1px, 1px, 1px);
-          padding: 1px 0 0 0!important;
-          border: 0!important;
-          height: 1px!important;
-          width: 1px!important;
-          overflow: hidden!important;
-          display:block!important;
-      }</style></aside>
-</section>
-<section id="head-to-head-logic-placeholder" class="slide level2">
-<h2>Head-to-head logic (placeholder)</h2>
-<div class="sourceCode" id="cb4"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href=""></a><span class="co"># Same helpers whether data came from CSV or BigQuery</span></span>
-<span id="cb4-2"><a href=""></a><span class="fu">h2h_matches</span>(team_a, team_b, <span class="at">data =</span> played_results)</span>
-<span id="cb4-3"><a href=""></a><span class="fu">h2h_summary</span>(team_a, team_b, <span class="at">data =</span> played_results)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p><em>[Placeholder: diagram or 1-line callout: home/away goal attribution]</em></p>
 </section>
 <section id="from-description-to-a-naive-forecast" class="slide level2">
 <h2>From description to a naive forecast</h2>
@@ -680,7 +722,7 @@ Figure&nbsp;2: Naive win/draw probabilities from head-to-head history
 <p><strong>This deck:</strong></p>
 <p><a href="https://github.com/rabin0208/world_cup_analytics_presentation">https://github.com/rabin0208/world_cup_analytics_presentation</a></p>
 <p>Render with Quarto:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode numberSource bash number-lines code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href=""></a><span class="ex">quarto</span> render index.qmd</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode numberSource bash number-lines code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href=""></a><span class="ex">quarto</span> render index.qmd</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section></section>
 <section id="thank-you" class="title-slide slide level1 center">
 <h1>Thank you!</h1>

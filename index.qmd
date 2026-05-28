@@ -122,7 +122,7 @@ Go to [console.cloud.google.com](https://console.cloud.google.com) with your Goo
 - **Organization:** No organization (for easier sharing)
 - **Save the Project ID** (e.g. `football-analytics-496219`):
 
-*[Screenshot: `images/gcp/01-new-project.png`: New Project dialog with name and Project ID]*
+![](images/03-new-project.png){fig-alt="GCP new project screen." width="88%"}
 
 ---
 
@@ -135,50 +135,90 @@ In the console, open **APIs & Services → Library** and enable:
 
 Filter by name if needed and click **Enable** on each.
 
-*[Screenshot: `images/gcp/02-enable-apis.png`: API Library with BigQuery and Cloud Storage enabled]*
+![](images/04-enable-apis.png){fig-alt="Enable BigQuery and Cloud Storage APIs in GCP." width="88%"}
 
 ---
 
 ## Step 3: Create the BigQuery dataset
 
-Open **BigQuery → Explorer → your project → Create dataset**:
+In **BigQuery → Explorer**, select your project and click **Create dataset**.
+
+![](images/05-create-dataset.png){fig-alt="BigQuery create dataset screen." width="88%"}
+
+Then choose the name of your dataset.
+
+---
+
+## Step 3 (continued): Create the BigQuery dataset
 
 - **Dataset ID:** `analytics`
 - **Location:** same region you will use for Storage (e.g. `US` or `northamerica-northeast1`)
 
-This project uses one curated table: `international_results` (created by the upload script).
-
-*[Screenshot: `images/gcp/03-create-dataset.png`: Create dataset dialog, ID `analytics`]*
+![](images/06-create-dataset2.png){fig-alt="BigQuery dataset created in Explorer." width="88%"}
 
 ---
 
 ## Step 4: Create the GCS bucket
 
-Open **Cloud Storage → Buckets → Create**:
+Open **Cloud Storage → Buckets** and click **Create**.
 
-- **Name:** `football-analytics-mds496219` (globally unique; add a suffix if taken, e.g. `-v2`)
+![](images/07-create-bucket.png){fig-alt="Cloud Storage buckets page with Create bucket action." width="88%"}
+
+---
+
+## Step 4 (continued): Configure bucket name and region
+
+- **Name:** `football-analytics-496219`
 - **Location:** match your BigQuery dataset region
 
 Upload script writes dated files under:
 
 `raw/international/results/YYYY-MM-DD/results.csv`
 
-*[Screenshot: `images/gcp/04-create-bucket.png`: Create bucket screen with name and region]*
+![](images/08-create-bucket2.png){fig-alt="Cloud Storage bucket naming and location settings." width="88%"}
 
 ---
 
 ## Step 5: Service account and JSON key
 
-**IAM & Admin → Service Accounts → Create service account**
+In **IAM & Admin → Service Accounts**, click **Create service account**.
 
-- Name: e.g. `football-analytics-sa`
+![](images/09-service-account.png){fig-alt="Service accounts page with Create service account action." width="88%"}
+
+---
+
+## Step 5 (continued): Name account and set permissions
+
+- Name: e.g. `football-analytics`
 - Grant roles (minimum for this repo):
   - **BigQuery Admin** (or BigQuery Data Editor + BigQuery Job User)
   - **Storage Admin** (or Storage Object Admin on the bucket)
 
-**Keys → Add key → Create new key → JSON** → save as `service-account-key.json` in the repo root (gitignored).
+::: {.columns}
+::: {.column width="50%"}
+![](images/10-service-account2.png){fig-alt="Service account naming step." width="100%"}
+:::
+::: {.column width="50%"}
+![](images/11-service-account3.png){fig-alt="Service account permissions step." width="100%"}
+:::
+:::
 
-*[Screenshot: `images/gcp/05-service-account.png`: Service account roles or Create key → JSON]*
+---
+
+## Step 5 (continued): Add service account key
+
+Use the created service account to generate a JSON key for local auth:
+
+**Service Accounts → your account → Keys → Add key → Create new key → JSON**
+
+::: {.columns}
+::: {.column width="50%"}
+![](images/12-service-account4.png){fig-alt="Service account keys tab with add key action." width="100%"}
+:::
+::: {.column width="50%"}
+![](images/13-service-account5.png){fig-alt="Create JSON key dialog." width="100%"}
+:::
+:::
 
 ---
 
@@ -195,7 +235,9 @@ The script:
 1. Uploads `data/international/results.csv` to your GCS prefix
 2. Loads into `YOUR_PROJECT_ID.analytics.international_results` (`WRITE_TRUNCATE`)
 
-*[Screenshot: `images/gcp/06-gcs-upload.png`: Cloud Storage browser showing `raw/international/results/.../results.csv`]*
+In Cloud Storage, confirm a dated object path appears under:
+
+`raw/international/results/YYYY-MM-DD/results.csv`
 
 ---
 
@@ -271,58 +313,96 @@ Say: "The warehouse is the source of truth; dplyr logic is unchanged after the d
 
 ---
 
-## Explore: Shiny dashboard
+## Explore: logic first, UI second
 
-**World Cup Analytics** (`app.R`)
+**World Cup Analytics** (`app.R`) is a thin Shiny layer over plain R functions in `src/R/analytics.R`.
 
-- Single focused view: no multi-tab navigation
-- **bslib** sidebar + cards: fixture picker, H2H chart, match tables
-- Same preprocessing after load from BigQuery (or CSV fallback): dates, `is_played`, World Cup flags
+- Inputs (fixture + scope) trigger **reactives**
+- Outputs (chart + tables) call the same **dplyr** helpers every time
+- No special query language: regular **tidyverse** on a data frame
 
-*[Placeholder: app home: value boxes: 2026 fixtures / World Cup matches played]*
-
----
-
-## Sidebar: fixture and H2H filters
-
-- **Fixture**: dropdown of unplayed 2026 group-stage matches from the loaded results
-- **Head-to-head year range**: slider over full history (1872 → today)
-- **Competition**: multi-select; leave empty for all competitions, or pick e.g. *FIFA World Cup* only
-
-*[Placeholder: screenshot with fixture selected + competition filter applied]*
-
-::: {.notes}
-Demo flow: pick a fixture → widen/narrow years → optionally filter to World Cup meetings only.
-:::
+![](images/01-h2h-barchart.png){fig-alt="H2H bar chart output from dplyr summaries." width="78%"}
 
 ---
 
-## Main view: matchup and head-to-head
+## Prep with regular tidyverse
 
-For the selected fixture:
-
-1. **Matchup card**: date, city, neutral vs non-neutral venue
-2. **H2H bar chart**: wins and draws (home team vs away team)
-3. **H2H results table**: every prior meeting under the current filters
-4. **Last 10 games**: separate tables for each team in the fixture
-
-*[Placeholder: two teams you plan to demo: e.g. USA vs Mexico or your choice]*
-
-::: {.notes}
-Rehearse this path. Narrate "history before kickoff."
-:::
-
----
-
-## Head-to-head logic (placeholder)
+After load (CSV or BigQuery), `app.R` builds views with standard verbs:
 
 ```r
-# Same helpers whether data came from CSV or BigQuery
-h2h_matches(team_a, team_b, data = played_results)
-h2h_summary(team_a, team_b, data = played_results)
+wc_results <- results |> filter(is_wc_tournament(tournament))
+wc_played <- wc_results |> filter(is_played(home_score, away_score))
+wc_upcoming <- wc_results |>
+  filter(!is_played(home_score, away_score)) |>
+  arrange(date, home_team)
+played_results <- results |> filter(is_played(home_score, away_score))
 ```
 
-*[Placeholder: diagram or 1-line callout: home/away goal attribution]*
+**Idea:** separate *played history*, *upcoming fixtures*, and *World Cup scope* before any UI renders.
+
+---
+
+## Head-to-head: `filter` + `arrange`
+
+`h2h_matches()` keeps meetings between the two teams, newest first:
+
+```r
+h2h_matches <- function(team_a, team_b, data) {
+  data |>
+    filter(
+      (home_team == team_a & away_team == team_b) |
+        (home_team == team_b & away_team == team_a)
+    ) |>
+    arrange(desc(date))
+}
+```
+
+`h2h_summary()` counts wins/draws from each team's perspective (home or away in that row).
+
+---
+
+## Scope filter: all competitions vs World Cup
+
+User picks scope in the sidebar; the server applies one more `filter`:
+
+```r
+d <- h2h_matches(fx$home_team, fx$away_team, played_results)
+if (identical(input$h2h_scope, "wc")) {
+  d <- d |> filter(is_wc_tournament(tournament))
+}
+```
+
+Same pattern for **last 10 games** tables per team.
+
+---
+
+## Recent form: `slice_head` + `mutate` + `select`
+
+```r
+team_last_matches <- function(team_name, played_results, scope) {
+  d <- played_results |>
+    filter(home_team == team_name | away_team == team_name)
+  if (identical(scope, "wc")) {
+    d <- d |> filter(is_wc_tournament(tournament))
+  }
+  d |>
+    arrange(desc(date)) |>
+    slice_head(n = 10) |>
+    mutate(
+      Result = sprintf("%d - %d", home_score, away_score),
+      Venue = ifelse(home_team == team_name, "Home", "Away"),
+      Opponent = ifelse(home_team == team_name, away_team, home_team)
+    ) |>
+    select(Date = date, Team, Opponent, Result, Venue,
+           Tournament = tournament, City = city)
+}
+```
+
+**Takeaway:** the dashboard is a viewer; the analysis is dplyr you could run in a script or Quarto doc.
+
+::: {.notes}
+Optional live demo: run `h2h_matches("Mexico", "South Africa", played_results)` in the console to show the table behind the chart.
+:::
 
 ---
 
