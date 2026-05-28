@@ -241,7 +241,7 @@ Use the created service account to generate a JSON key for local auth:
 
 ## Step 6: Run the R upload script
 
-From the **world_cup_analytics** repo root (with `.env` filled in, next slide):
+From the **world_cup_analytics** repo root (with `.env` set):
 
 ```bash
 Rscript src/upload_international_results.R
@@ -255,6 +255,10 @@ The script:
 In Cloud Storage, confirm a dated object path appears under:
 
 `raw/international/results/YYYY-MM-DD/results.csv`
+
+::: {.notes}
+`.env` at repo root: `GCP_PROJECT_ID`, `GOOGLE_APPLICATION_CREDENTIALS=./service-account-key.json`, and `USE_BIGQUERY=TRUE` for BigQuery-backed runs.
+:::
 
 ---
 
@@ -571,13 +575,13 @@ ggplot(probs, aes(x = outcome, y = rate, fill = outcome)) +
 ## What this is, and what’s next
 
 | With match-level CSV / BQ | Needs event or lineup data |
-|---------------------------|-----------------------------------------------|
+|---------------------------|------------------------------|
 | Empirical H2H, home/draw/away baselines | xG, player form, tactical matchups |
 | Elo / simple glm on team strength | Club vs international windows with lineups |
 
 **This talk:** exploration + **one** naive forecast, enough to connect to your abstract’s “prediction sketch.”
 
-**Later:** Multinomial model for home/draw/away outcomes, plus more dashboard views using additional tables.
+**Later:** Multinomial model for home/draw/away outcomes, more dashboard views using additional tables, and serve that model on **Kubernetes** for batch or API predictions (the Shiny app can stay on Posit Connect).
 
 ---
 
@@ -588,6 +592,7 @@ ggplot(probs, aes(x = outcome, y = rate, fill = outcome)) +
 - [ ] `goalscorers` (and shootouts) into BigQuery for richer views
 - [ ] Additional dashboard tabs (overview, teams, goalscorers) on top of the WC fixture view
 - [ ] Compare lineup-aware model vs team-only baseline on out-of-sample matches
+- [ ] Serve the prediction model on **Kubernetes** (e.g. scored fixtures API or scheduled batch jobs on GKE)
 
 ---
 

@@ -497,7 +497,7 @@ Rabindranath Duran Pons
 </section>
 <section id="step-6-run-the-r-upload-script" class="slide level2">
 <h2>Step 6: Run the R upload script</h2>
-<p>From the <strong>world_cup_analytics</strong> repo root (with <code>.env</code> filled in, next slide):</p>
+<p>From the <strong>world_cup_analytics</strong> repo root (with <code>.env</code> set):</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode numberSource bash number-lines code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href=""></a><span class="ex">Rscript</span> src/upload_international_results.R</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>The script:</p>
 <ol type="1">
@@ -506,6 +506,19 @@ Rabindranath Duran Pons
 </ol>
 <p>In Cloud Storage, confirm a dated object path appears under:</p>
 <p><code>raw/international/results/YYYY-MM-DD/results.csv</code></p>
+<aside class="notes">
+<p><code>.env</code> at repo root: <code>GCP_PROJECT_ID</code>, <code>GOOGLE_APPLICATION_CREDENTIALS=./service-account-key.json</code>, and <code>USE_BIGQUERY=TRUE</code> for BigQuery-backed runs.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
 </section>
 <section id="upload-r-to-gcs-and-bigquery" class="slide level2">
 <h2>Upload: R to GCS and BigQuery</h2>
@@ -717,8 +730,8 @@ Figure&nbsp;2: Naive win/draw probabilities from head-to-head history
 <h2>What this is, and what’s next</h2>
 <table class="caption-top">
 <colgroup>
-<col style="width: 36%">
-<col style="width: 63%">
+<col style="width: 47%">
+<col style="width: 52%">
 </colgroup>
 <thead>
 <tr class="header">
@@ -738,7 +751,7 @@ Figure&nbsp;2: Naive win/draw probabilities from head-to-head history
 </tbody>
 </table>
 <p><strong>This talk:</strong> exploration + <strong>one</strong> naive forecast, enough to connect to your abstract’s “prediction sketch.”</p>
-<p><strong>Later:</strong> Multinomial model for home/draw/away outcomes, plus more dashboard views using additional tables.</p>
+<p><strong>Later:</strong> Multinomial model for home/draw/away outcomes, more dashboard views using additional tables, and serve that model on <strong>Kubernetes</strong> for batch or API predictions (the Shiny app can stay on Posit Connect).</p>
 </section>
 <section id="future-work" class="slide level2">
 <h2>Future work</h2>
@@ -748,6 +761,7 @@ Figure&nbsp;2: Naive win/draw probabilities from head-to-head history
 <li><label><input type="checkbox"><code>goalscorers</code> (and shootouts) into BigQuery for richer views</label></li>
 <li><label><input type="checkbox">Additional dashboard tabs (overview, teams, goalscorers) on top of the WC fixture view</label></li>
 <li><label><input type="checkbox">Compare lineup-aware model vs team-only baseline on out-of-sample matches</label></li>
+<li><label><input type="checkbox">Serve the prediction model on <strong>Kubernetes</strong> (e.g.&nbsp;scored fixtures API or scheduled batch jobs on GKE)</label></li>
 </ul>
 </section>
 <section id="want-to-learn-more" class="slide level2">
