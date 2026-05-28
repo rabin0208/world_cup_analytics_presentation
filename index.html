@@ -314,7 +314,7 @@ Rabindranath Duran Pons
 <div>
 <pre class="mermaid mermaid-js">flowchart LR
   CSV[data/international/results.csv] --&gt; GCS[GCS raw/]
-  GCS --&gt; BQ[BigQuery analytics.international_results]
+  GCS --&gt; BQ[analytics.international_results]
   BQ --&gt; Shiny[Shiny bq_table_download]
   CSV -.-&gt;|USE_BIGQUERY=FALSE| Shiny
 </pre>
@@ -324,7 +324,133 @@ Rabindranath Duran Pons
 </div>
 </div>
 <p><strong>Upload</strong> refreshes the warehouse. <strong>Explore</strong> reads <code>international_results</code> from BigQuery at startup.</p>
-<p><em>[Placeholder: <code>images/pipeline.png</code>: optional custom diagram]</em></p>
+<p><strong>In BigQuery</strong> (<code>analytics.international_results</code>):</p>
+<ul>
+<li>One row per match: <code>date</code>, <code>home_team</code>, <code>away_team</code>, <code>home_score</code>, <code>away_score</code></li>
+<li>Context: <code>tournament</code>, <code>city</code>, <code>country</code>, <code>neutral</code></li>
+<li>Same column names as the bundled CSV, so upload and Shiny share one schema</li>
+</ul>
+</section>
+<section id="gcp-setup-one-time" class="slide level2">
+<h2>GCP setup (one-time)</h2>
+<p>Before the upload script, create a personal GCP project with <strong>BigQuery</strong> and <strong>Cloud Storage</strong>:</p>
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th>Step</th>
+<th>Console task</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1</td>
+<td>Create project</td>
+</tr>
+<tr class="even">
+<td>2</td>
+<td>Enable BigQuery + Cloud Storage APIs</td>
+</tr>
+<tr class="odd">
+<td>3</td>
+<td>Create dataset <code>analytics</code> or similar</td>
+</tr>
+<tr class="even">
+<td>4</td>
+<td>Create bucket <code>football-analytics</code> (or similar)</td>
+</tr>
+<tr class="odd">
+<td>5</td>
+<td>Service account + download JSON key</td>
+</tr>
+<tr class="even">
+<td>6</td>
+<td>Run <code>upload_international_results.R</code></td>
+</tr>
+<tr class="odd">
+<td>7</td>
+<td>Point <code>.env</code> at project and verify table</td>
+</tr>
+</tbody>
+</table>
+<aside class="notes">
+<p>This block is the “how to reproduce the warehouse” walkthrough. Use light-mode screenshots.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="step-1-create-a-gcp-project" class="slide level2">
+<h2>Step 1: Create a GCP project</h2>
+<p>Go to <a href="https://console.cloud.google.com">console.cloud.google.com</a> with your Google account.</p>
+<ul>
+<li><strong>New project</strong> name: e.g.&nbsp;<code>football-analytics</code> (pick any clear name)</li>
+<li><strong>Organization:</strong> No organization (for easier sharing)</li>
+<li><strong>Save the Project ID</strong> (e.g.&nbsp;<code>football-analytics-496219</code>):</li>
+</ul>
+<p><em>[Screenshot: <code>images/gcp/01-new-project.png</code>: New Project dialog with name and Project ID]</em></p>
+</section>
+<section id="step-2-enable-apis" class="slide level2">
+<h2>Step 2: Enable APIs</h2>
+<p>In the console, open <strong>APIs &amp; Services → Library</strong> and enable:</p>
+<ul>
+<li><strong>BigQuery API</strong></li>
+<li><strong>Cloud Storage API</strong></li>
+</ul>
+<p>Filter by name if needed and click <strong>Enable</strong> on each.</p>
+<p><em>[Screenshot: <code>images/gcp/02-enable-apis.png</code>: API Library with BigQuery and Cloud Storage enabled]</em></p>
+</section>
+<section id="step-3-create-the-bigquery-dataset" class="slide level2">
+<h2>Step 3: Create the BigQuery dataset</h2>
+<p>Open <strong>BigQuery → Explorer → your project → Create dataset</strong>:</p>
+<ul>
+<li><strong>Dataset ID:</strong> <code>analytics</code></li>
+<li><strong>Location:</strong> same region you will use for Storage (e.g.&nbsp;<code>US</code> or <code>northamerica-northeast1</code>)</li>
+</ul>
+<p>This project uses one curated table: <code>international_results</code> (created by the upload script).</p>
+<p><em>[Screenshot: <code>images/gcp/03-create-dataset.png</code>: Create dataset dialog, ID <code>analytics</code>]</em></p>
+</section>
+<section id="step-4-create-the-gcs-bucket" class="slide level2">
+<h2>Step 4: Create the GCS bucket</h2>
+<p>Open <strong>Cloud Storage → Buckets → Create</strong>:</p>
+<ul>
+<li><strong>Name:</strong> <code>football-analytics-mds496219</code> (globally unique; add a suffix if taken, e.g.&nbsp;<code>-v2</code>)</li>
+<li><strong>Location:</strong> match your BigQuery dataset region</li>
+</ul>
+<p>Upload script writes dated files under:</p>
+<p><code>raw/international/results/YYYY-MM-DD/results.csv</code></p>
+<p><em>[Screenshot: <code>images/gcp/04-create-bucket.png</code>: Create bucket screen with name and region]</em></p>
+</section>
+<section id="step-5-service-account-and-json-key" class="slide level2">
+<h2>Step 5: Service account and JSON key</h2>
+<p><strong>IAM &amp; Admin → Service Accounts → Create service account</strong></p>
+<ul>
+<li>Name: e.g.&nbsp;<code>football-analytics-sa</code></li>
+<li>Grant roles (minimum for this repo):
+<ul>
+<li><strong>BigQuery Admin</strong> (or BigQuery Data Editor + BigQuery Job User)</li>
+<li><strong>Storage Admin</strong> (or Storage Object Admin on the bucket)</li>
+</ul></li>
+</ul>
+<p><strong>Keys → Add key → Create new key → JSON</strong> → save as <code>service-account-key.json</code> in the repo root (gitignored).</p>
+<p><em>[Screenshot: <code>images/gcp/05-service-account.png</code>: Service account roles or Create key → JSON]</em></p>
+</section>
+<section id="step-6-run-the-r-upload-script" class="slide level2">
+<h2>Step 6: Run the R upload script</h2>
+<p>From the <strong>world_cup_analytics</strong> repo root (with <code>.env</code> filled in, next slide):</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode numberSource bash number-lines code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href=""></a><span class="ex">Rscript</span> src/upload_international_results.R</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The script:</p>
+<ol type="1">
+<li>Uploads <code>data/international/results.csv</code> to your GCS prefix</li>
+<li>Loads into <code>YOUR_PROJECT_ID.analytics.international_results</code> (<code>WRITE_TRUNCATE</code>)</li>
+</ol>
+<p><em>[Screenshot: <code>images/gcp/06-gcs-upload.png</code>: Cloud Storage browser showing <code>raw/international/results/.../results.csv</code>]</em></p>
 </section>
 <section id="upload-r-to-gcs-and-bigquery" class="slide level2">
 <h2>Upload: R to GCS and BigQuery</h2>
@@ -334,7 +460,7 @@ Rabindranath Duran Pons
 <li><code>read_csv()</code> with explicit types (<code>NA</code> scores → NULL)</li>
 <li><code>bq_table_upload()</code>: <code>WRITE_TRUNCATE</code> into <code>analytics.international_results</code></li>
 </ol>
-<p>Re-run when martj42’s dataset updates; the live app picks up the new table on next deploy.</p>
+<p>Re-run when martj42’s dataset updates. The live app picks up the new table on next deploy.</p>
 <aside class="notes">
 <p>Optional live run in RStudio (~10-20 s) to show row count after load.</p>
 <style type="text/css">
@@ -351,29 +477,37 @@ Rabindranath Duran Pons
 </section>
 <section id="upload-script" class="slide level2">
 <h2>Upload script</h2>
-<div class="sourceCode" id="cb1"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href=""></a><span class="fu">gcs_upload</span>(local_csv, <span class="at">name =</span> gcs_object)</span>
-<span id="cb1-2"><a href=""></a>results <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(</span>
-<span id="cb1-3"><a href=""></a>  local_csv,</span>
-<span id="cb1-4"><a href=""></a>  <span class="at">na =</span> <span class="fu">c</span>(<span class="st">""</span>, <span class="st">"NA"</span>),</span>
-<span id="cb1-5"><a href=""></a>  <span class="at">col_types =</span> <span class="fu">cols</span>(</span>
-<span id="cb1-6"><a href=""></a>    <span class="at">date =</span> <span class="fu">col_date</span>(),</span>
-<span id="cb1-7"><a href=""></a>    <span class="at">home_score =</span> <span class="fu">col_integer</span>(),</span>
-<span id="cb1-8"><a href=""></a>    <span class="at">away_score =</span> <span class="fu">col_integer</span>(),</span>
-<span id="cb1-9"><a href=""></a>    <span class="at">neutral =</span> <span class="fu">col_logical</span>(),</span>
-<span id="cb1-10"><a href=""></a>    <span class="at">.default =</span> <span class="fu">col_character</span>()</span>
-<span id="cb1-11"><a href=""></a>  )</span>
-<span id="cb1-12"><a href=""></a>)</span>
-<span id="cb1-13"><a href=""></a><span class="fu">bq_table_upload</span>(</span>
-<span id="cb1-14"><a href=""></a>  <span class="fu">bq_table</span>(project_id, <span class="st">"analytics"</span>, <span class="st">"international_results"</span>),</span>
-<span id="cb1-15"><a href=""></a>  results,</span>
-<span id="cb1-16"><a href=""></a>  <span class="at">write_disposition =</span> <span class="st">"WRITE_TRUNCATE"</span></span>
-<span id="cb1-17"><a href=""></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href=""></a><span class="fu">gcs_upload</span>(local_csv, <span class="at">name =</span> gcs_object)</span>
+<span id="cb2-2"><a href=""></a>results <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(</span>
+<span id="cb2-3"><a href=""></a>  local_csv,</span>
+<span id="cb2-4"><a href=""></a>  <span class="at">na =</span> <span class="fu">c</span>(<span class="st">""</span>, <span class="st">"NA"</span>),</span>
+<span id="cb2-5"><a href=""></a>  <span class="at">col_types =</span> <span class="fu">cols</span>(</span>
+<span id="cb2-6"><a href=""></a>    <span class="at">date =</span> <span class="fu">col_date</span>(),</span>
+<span id="cb2-7"><a href=""></a>    <span class="at">home_score =</span> <span class="fu">col_integer</span>(),</span>
+<span id="cb2-8"><a href=""></a>    <span class="at">away_score =</span> <span class="fu">col_integer</span>(),</span>
+<span id="cb2-9"><a href=""></a>    <span class="at">neutral =</span> <span class="fu">col_logical</span>(),</span>
+<span id="cb2-10"><a href=""></a>    <span class="at">.default =</span> <span class="fu">col_character</span>()</span>
+<span id="cb2-11"><a href=""></a>  )</span>
+<span id="cb2-12"><a href=""></a>)</span>
+<span id="cb2-13"><a href=""></a><span class="fu">bq_table_upload</span>(</span>
+<span id="cb2-14"><a href=""></a>  <span class="fu">bq_table</span>(project_id, <span class="st">"analytics"</span>, <span class="st">"international_results"</span>),</span>
+<span id="cb2-15"><a href=""></a>  results,</span>
+<span id="cb2-16"><a href=""></a>  <span class="at">write_disposition =</span> <span class="st">"WRITE_TRUNCATE"</span></span>
+<span id="cb2-17"><a href=""></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section>
+<section id="step-7-verify-in-bigquery" class="slide level2">
+<h2>Step 7: Verify in BigQuery</h2>
+<p>In <strong>BigQuery → <code>analytics</code> → <code>international_results</code></strong>:</p>
+<ul>
+<li>Open <strong>Schema</strong> or <strong>Preview</strong> and confirm columns/row count</li>
+</ul>
+
+<img data-src="images/02-bigquery-table.png" style="width:92.0%" alt="BigQuery schema for analytics.international_results." class="r-stretch"></section>
 <section id="shiny-reads-from-bigquery" class="slide level2">
 <h2>Shiny reads from BigQuery</h2>
 <p>At startup, <code>app.R</code> loads match history with <code>bq_table_download()</code>:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href=""></a>dest <span class="ot">&lt;-</span> <span class="fu">bq_table</span>(project_id, <span class="st">"analytics"</span>, <span class="st">"international_results"</span>)</span>
-<span id="cb2-2"><a href=""></a>results <span class="ot">&lt;-</span> <span class="fu">bq_table_download</span>(dest, <span class="at">bigint =</span> <span class="st">"integer"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href=""></a>dest <span class="ot">&lt;-</span> <span class="fu">bq_table</span>(project_id, <span class="st">"analytics"</span>, <span class="st">"international_results"</span>)</span>
+<span id="cb3-2"><a href=""></a>results <span class="ot">&lt;-</span> <span class="fu">bq_table_download</span>(dest, <span class="at">bigint =</span> <span class="st">"integer"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>Set in <code>.env</code> on Connect (or locally):</p>
 <ul>
 <li><code>USE_BIGQUERY=TRUE</code></li>
@@ -393,12 +527,6 @@ Rabindranath Duran Pons
           overflow: hidden!important;
           display:block!important;
       }</style></aside>
-</section>
-<section id="local-fallback-bundled-csv" class="slide level2">
-<h2>Local fallback: bundled CSV</h2>
-<p><strong>Production (Connect):</strong> <code>USE_BIGQUERY=TRUE</code> → <code>analytics.international_results</code></p>
-<p><strong>Local dev:</strong> <code>USE_BIGQUERY=FALSE</code> → bundled <code>results.csv</code> (no GCP)</p>
-<p>The CSV in <code>data/international/</code> also feeds the upload script when you refresh BigQuery.</p>
 </section>
 <section id="explore-shiny-dashboard" class="slide level2">
 <h2>Explore: Shiny dashboard</h2>
@@ -458,9 +586,9 @@ Rabindranath Duran Pons
 </section>
 <section id="head-to-head-logic-placeholder" class="slide level2">
 <h2>Head-to-head logic (placeholder)</h2>
-<div class="sourceCode" id="cb3"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href=""></a><span class="co"># Same helpers whether data came from CSV or BigQuery</span></span>
-<span id="cb3-2"><a href=""></a><span class="fu">h2h_matches</span>(team_a, team_b, <span class="at">data =</span> played_results)</span>
-<span id="cb3-3"><a href=""></a><span class="fu">h2h_summary</span>(team_a, team_b, <span class="at">data =</span> played_results)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href=""></a><span class="co"># Same helpers whether data came from CSV or BigQuery</span></span>
+<span id="cb4-2"><a href=""></a><span class="fu">h2h_matches</span>(team_a, team_b, <span class="at">data =</span> played_results)</span>
+<span id="cb4-3"><a href=""></a><span class="fu">h2h_summary</span>(team_a, team_b, <span class="at">data =</span> played_results)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p><em>[Placeholder: diagram or 1-line callout: home/away goal attribution]</em></p>
 </section>
 <section id="from-description-to-a-naive-forecast" class="slide level2">
@@ -495,16 +623,16 @@ P(\text{B wins}) &amp;\approx \frac{w_B}{n}
 <p>Before trusting a rivalry’s history, know the <strong>base rates</strong> in the full results file:</p>
 
 <img data-src="index_files/figure-revealjs/fig-baseline-rates-1.png" width="672" class="r-stretch quarto-figure-center" id="fig-baseline-rates"><p class="caption">
-Figure&nbsp;1: Share of home win, draw, and away win (all played internationals)
+Figure&nbsp;1: Share of home win, draw, and away win
 </p><p><strong>Benchmark:</strong> any fancier model should beat “always predict home win” on out-of-sample matches.</p>
 </section>
-<section id="example-brazil-vs-argentina-empirical-h2h" class="slide level2">
-<h2>Example: Brazil vs Argentina (empirical H2H)</h2>
+<section id="example-mexico-vs-south-africa-empirical-h2h" class="slide level2">
+<h2>Example: Mexico vs South Africa (empirical H2H)</h2>
 <p>Same logic as <code>h2h_summary()</code> in the app: count wins from each team’s perspective.</p>
 
 <img data-src="index_files/figure-revealjs/fig-h2h-naive-prob-1.png" width="672" class="r-stretch quarto-figure-center" id="fig-h2h-naive-prob"><p class="caption">
 Figure&nbsp;2: Naive win/draw probabilities from head-to-head history
-</p><p><strong>Talking point:</strong> “If history repeated blindly, we’d assign these shares: but <span class="math inline">\(n\)</span> is small and rosters change.”</p>
+</p><p><strong>Talking point:</strong> “In 4 Mexico-South Africa meetings, Mexico has 2 wins, South Africa 1, and 1 draw, so the naive probabilities are 50%, 25%, and 25%. This is useful as a baseline, but noisy with small <span class="math inline">\(n\)</span>.”</p>
 </section>
 <section id="what-this-is-and-whats-next" class="slide level2">
 <h2>What this is, and what’s next</h2>
@@ -516,7 +644,7 @@ Figure&nbsp;2: Naive win/draw probabilities from head-to-head history
 <thead>
 <tr class="header">
 <th>With match-level CSV / BQ</th>
-<th>Needs event or lineup data (StatsBomb, etc.)</th>
+<th>Needs event or lineup data</th>
 </tr>
 </thead>
 <tbody>
@@ -531,27 +659,16 @@ Figure&nbsp;2: Naive win/draw probabilities from head-to-head history
 </tbody>
 </table>
 <p><strong>This talk:</strong> exploration + <strong>one</strong> naive forecast, enough to connect to your abstract’s “prediction sketch.”</p>
-<p><strong>Later:</strong> Elo ratings, logistic model in BigQuery, Parquet event pipeline for club comparisons.</p>
+<p><strong>Later:</strong> Multinomial model for home/draw/away outcomes, plus more dashboard views using additional tables.</p>
 </section>
-<section id="deploy-posit-connect-cloud" class="slide level2">
-<h2>Deploy: Posit Connect Cloud</h2>
-<p>Same pattern as other course apps:</p>
-<ol type="1">
-<li><code>rsconnect::writeManifest()</code> next to <code>app.R</code></li>
-<li>Push <code>app.R</code>, <code>manifest.json</code>, <strong><code>data/international/</code></strong> (upload source + CSV fallback)</li>
-<li>Set <strong><code>USE_BIGQUERY=TRUE</code></strong> and GCP env vars as Connect variables (not in git)</li>
-<li>Connect restores packages from <code>manifest.json</code></li>
-</ol>
-<p><em>[Placeholder: Connect deploy URL or dashboard screenshot]</em></p>
-</section>
-<section id="future-work-placeholders" class="slide level2">
-<h2>Future work (placeholders)</h2>
+<section id="future-work" class="slide level2">
+<h2>Future work</h2>
 <ul class="task-list">
-<li><label><input type="checkbox">Elo or <code>glm()</code> on <code>played_results</code> (first step beyond naive frequencies)</label></li>
-<li><label><input type="checkbox">Parquet upload script (StatsBomb-style thread from the abstract)</label></li>
+<li><label><input type="checkbox">Elo or <code>glm()</code> on played games (first step beyond naive frequencies)</label></li>
+<li><label><input type="checkbox">Add player- and lineup-level features to build a stronger pre-match model</label></li>
 <li><label><input type="checkbox"><code>goalscorers</code> (and shootouts) into BigQuery for richer views</label></li>
 <li><label><input type="checkbox">Additional dashboard tabs (overview, teams, goalscorers) on top of the WC fixture view</label></li>
-<li><label><input type="checkbox">Looker Studio (or similar) on published tables</label></li>
+<li><label><input type="checkbox">Compare lineup-aware model vs team-only baseline on out-of-sample matches</label></li>
 </ul>
 </section>
 <section id="want-to-learn-more" class="slide level2">
@@ -561,13 +678,14 @@ Figure&nbsp;2: Naive win/draw probabilities from head-to-head history
 <p><strong>This project: Shiny app &amp; pipeline:</strong></p>
 <p><a href="https://github.com/rabin0208/world_cup_analytics">https://github.com/rabin0208/world_cup_analytics</a></p>
 <p><strong>This deck:</strong></p>
-<p><code>world_cup_analytics_presentation</code>: render with Quarto:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode numberSource bash number-lines code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href=""></a><span class="ex">quarto</span> render index.qmd</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p><a href="https://github.com/rabin0208/world_cup_analytics_presentation">https://github.com/rabin0208/world_cup_analytics_presentation</a></p>
+<p>Render with Quarto:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode numberSource bash number-lines code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href=""></a><span class="ex">quarto</span> render index.qmd</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section></section>
 <section id="thank-you" class="title-slide slide level1 center">
 <h1>Thank you!</h1>
 <aside class="notes">
-<p>Thank audience; point to repo and office hours.</p>
+<p>Thank audience.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
