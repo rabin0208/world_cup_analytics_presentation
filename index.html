@@ -97,6 +97,7 @@
     code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
   </style>
   <link rel="stylesheet" href="index_files/libs/revealjs/dist/theme/quarto-f563837468303362081e247dddd440d0.css">
+  <link rel="stylesheet" href="styles.css">
   <link href="index_files/libs/revealjs/plugin/quarto-line-highlight/line-highlight.css" rel="stylesheet">
   <link href="index_files/libs/revealjs/plugin/reveal-menu/menu.css" rel="stylesheet">
   <link href="index_files/libs/revealjs/plugin/reveal-menu/quarto-menu.css" rel="stylesheet">
@@ -220,14 +221,12 @@ Rabindranath Duran Pons
 <h2>Before a 2026 group-stage match…</h2>
 <p>Pick a fixture and ask:</p>
 <ul>
-<li><strong>Head-to-head</strong> — who leads on wins and draws?</li>
-<li><strong>Recent form</strong> — how has each team played in their last 10 matches?</li>
-<li><strong>Scope</strong> — all meetings or <strong>World Cup only</strong>? Which years count?</li>
+<li><strong>Head-to-head</strong>: who leads on wins and draws?</li>
+<li><strong>Recent form</strong>: how has each team played in their last 10 matches?</li>
+<li><strong>Scope</strong>: all meetings or <strong>World Cup only</strong>? Which years count?</li>
 </ul>
-<div class="fragment">
-<p><em>[Placeholder: screenshot — fixture picker + matchup summary + H2H bar chart]</em></p>
-</div>
-<aside class="notes">
+
+<img data-src="images/01-h2h-barchart.png" style="width:92.0%" alt="Head-to-head bar chart for Mexico vs South Africa showing 2 wins for Mexico, 1 draw, and 1 win for South Africa." class="r-stretch"><aside class="notes">
 <p>Optional: ask the room one question they care about before moving to data.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
@@ -252,17 +251,17 @@ Rabindranath Duran Pons
 <p>That gap is why one community dataset matters.</p>
 </section>
 <section id="data-source-martj42international_results" class="slide level2">
-<h2>Data source — <a href="https://github.com/martj42/international_results">martj42/international_results</a></h2>
-<p><strong>Special thanks</strong> to <a href="https://github.com/martj42/international_results">martj42/international_results</a> — a maintained, <strong>free</strong> dataset of men’s international matches:</p>
+<h2>Data source: <a href="https://github.com/martj42/international_results">martj42/international_results</a></h2>
+<p><strong>Special thanks</strong> to <a href="https://github.com/martj42/international_results">martj42/international_results</a>: a maintained, <strong>free</strong> dataset of men’s international matches:</p>
 <ul>
 <li><strong>~49,000+ results</strong> from the first official match (1872) through recent years</li>
-<li>World Cups, friendlies, continental tournaments — one consistent schema</li>
+<li>World Cups, friendlies, continental tournaments: one consistent schema</li>
 <li>Companion files: goalscorers, shootouts, former country names</li>
-<li><strong>CC0</strong> license — use and share with attribution</li>
+<li><strong>CC0</strong> license: use and share with attribution</li>
 </ul>
 <p>Also on <a href="https://www.kaggle.com/datasets/martj42/international-football-results-from-1872-to-2017">Kaggle</a> · contributions welcome via PRs on GitHub</p>
 <aside class="notes">
-<p>Say clearly: “I did not build this raw history — I stand on martj42’s work.”</p>
+<p>Say clearly: “I did not build this raw history. I stand on martj42’s work.”</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -288,7 +287,7 @@ Rabindranath Duran Pons
 <tbody>
 <tr class="odd">
 <td><code>results.csv</code></td>
-<td>Matches — date, teams, scores, tournament, venue</td>
+<td>Matches: date, teams, scores, tournament, venue</td>
 </tr>
 <tr class="even">
 <td><code>goalscorers.csv</code></td>
@@ -304,7 +303,7 @@ Rabindranath Duran Pons
 </tr>
 </tbody>
 </table>
-<p>Same columns in the warehouse as in the bundled CSV — one schema from upload through the app.</p>
+<p>Same columns in the warehouse as in the bundled CSV: one schema from upload through the app.</p>
 </section>
 <section id="end-to-end-pipeline" class="slide level2">
 <h2>End-to-end pipeline</h2>
@@ -325,19 +324,19 @@ Rabindranath Duran Pons
 </div>
 </div>
 <p><strong>Upload</strong> refreshes the warehouse. <strong>Explore</strong> reads <code>international_results</code> from BigQuery at startup.</p>
-<p><em>[Placeholder: <code>images/pipeline.png</code> — optional custom diagram]</em></p>
+<p><em>[Placeholder: <code>images/pipeline.png</code>: optional custom diagram]</em></p>
 </section>
 <section id="upload-r-to-gcs-and-bigquery" class="slide level2">
-<h2>Upload — R to GCS and BigQuery</h2>
+<h2>Upload: R to GCS and BigQuery</h2>
 <p><code>upload_international_results.R</code> in the <strong>world_cup_analytics</strong> repo:</p>
 <ol type="1">
-<li><code>gcs_upload()</code> — dated prefix under <code>raw/international/results/</code></li>
+<li><code>gcs_upload()</code>: dated prefix under <code>raw/international/results/</code></li>
 <li><code>read_csv()</code> with explicit types (<code>NA</code> scores → NULL)</li>
-<li><code>bq_table_upload()</code> — <code>WRITE_TRUNCATE</code> into <code>analytics.international_results</code></li>
+<li><code>bq_table_upload()</code>: <code>WRITE_TRUNCATE</code> into <code>analytics.international_results</code></li>
 </ol>
 <p>Re-run when martj42’s dataset updates; the live app picks up the new table on next deploy.</p>
 <aside class="notes">
-<p>Optional live run in RStudio (~10–20 s) to show row count after load.</p>
+<p>Optional live run in RStudio (~10-20 s) to show row count after load.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -396,27 +395,27 @@ Rabindranath Duran Pons
       }</style></aside>
 </section>
 <section id="local-fallback-bundled-csv" class="slide level2">
-<h2>Local fallback — bundled CSV</h2>
+<h2>Local fallback: bundled CSV</h2>
 <p><strong>Production (Connect):</strong> <code>USE_BIGQUERY=TRUE</code> → <code>analytics.international_results</code></p>
 <p><strong>Local dev:</strong> <code>USE_BIGQUERY=FALSE</code> → bundled <code>results.csv</code> (no GCP)</p>
 <p>The CSV in <code>data/international/</code> also feeds the upload script when you refresh BigQuery.</p>
 </section>
 <section id="explore-shiny-dashboard" class="slide level2">
-<h2>Explore — Shiny dashboard</h2>
+<h2>Explore: Shiny dashboard</h2>
 <p><strong>World Cup Analytics</strong> (<code>app.R</code>)</p>
 <ul>
-<li>Single focused view — no multi-tab navigation</li>
+<li>Single focused view: no multi-tab navigation</li>
 <li><strong>bslib</strong> sidebar + cards: fixture picker, H2H chart, match tables</li>
 <li>Same preprocessing after load from BigQuery (or CSV fallback): dates, <code>is_played</code>, World Cup flags</li>
 </ul>
-<p><em>[Placeholder: app home — value boxes: 2026 fixtures / World Cup matches played]</em></p>
+<p><em>[Placeholder: app home: value boxes: 2026 fixtures / World Cup matches played]</em></p>
 </section>
 <section id="sidebar-fixture-and-h2h-filters" class="slide level2">
-<h2>Sidebar — fixture and H2H filters</h2>
+<h2>Sidebar: fixture and H2H filters</h2>
 <ul>
-<li><strong>Fixture</strong> — dropdown of unplayed 2026 group-stage matches from the loaded results</li>
-<li><strong>Head-to-head year range</strong> — slider over full history (1872 → today)</li>
-<li><strong>Competition</strong> — multi-select; leave empty for all competitions, or pick e.g.&nbsp;<em>FIFA World Cup</em> only</li>
+<li><strong>Fixture</strong>: dropdown of unplayed 2026 group-stage matches from the loaded results</li>
+<li><strong>Head-to-head year range</strong>: slider over full history (1872 → today)</li>
+<li><strong>Competition</strong>: multi-select; leave empty for all competitions, or pick e.g.&nbsp;<em>FIFA World Cup</em> only</li>
 </ul>
 <p><em>[Placeholder: screenshot with fixture selected + competition filter applied]</em></p>
 <aside class="notes">
@@ -434,15 +433,15 @@ Rabindranath Duran Pons
       }</style></aside>
 </section>
 <section id="main-view-matchup-and-head-to-head" class="slide level2">
-<h2>Main view — matchup and head-to-head</h2>
+<h2>Main view: matchup and head-to-head</h2>
 <p>For the selected fixture:</p>
 <ol type="1">
-<li><strong>Matchup card</strong> — date, city, neutral vs non-neutral venue</li>
-<li><strong>H2H bar chart</strong> — wins and draws (home team vs away team)</li>
-<li><strong>H2H results table</strong> — every prior meeting under the current filters</li>
-<li><strong>Last 10 games</strong> — separate tables for each team in the fixture</li>
+<li><strong>Matchup card</strong>: date, city, neutral vs non-neutral venue</li>
+<li><strong>H2H bar chart</strong>: wins and draws (home team vs away team)</li>
+<li><strong>H2H results table</strong>: every prior meeting under the current filters</li>
+<li><strong>Last 10 games</strong>: separate tables for each team in the fixture</li>
 </ol>
-<p><em>[Placeholder: two teams you plan to demo — e.g.&nbsp;USA vs Mexico or your choice]</em></p>
+<p><em>[Placeholder: two teams you plan to demo: e.g.&nbsp;USA vs Mexico or your choice]</em></p>
 <aside class="notes">
 <p>Rehearse this path. Narrate “history before kickoff.”</p>
 <style type="text/css">
@@ -462,7 +461,7 @@ Rabindranath Duran Pons
 <div class="sourceCode" id="cb3"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href=""></a><span class="co"># Same helpers whether data came from CSV or BigQuery</span></span>
 <span id="cb3-2"><a href=""></a><span class="fu">h2h_matches</span>(team_a, team_b, <span class="at">data =</span> played_results)</span>
 <span id="cb3-3"><a href=""></a><span class="fu">h2h_summary</span>(team_a, team_b, <span class="at">data =</span> played_results)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p><em>[Placeholder: diagram or 1-line callout — home/away goal attribution]</em></p>
+<p><em>[Placeholder: diagram or 1-line callout: home/away goal attribution]</em></p>
 </section>
 <section id="from-description-to-a-naive-forecast" class="slide level2">
 <h2>From description to a naive forecast</h2>
@@ -475,8 +474,8 @@ P(\text{draw})   &amp;\approx \frac{d}{n} \\
 P(\text{B wins}) &amp;\approx \frac{w_B}{n}
 \end{aligned}
 \]</span></p>
-<p>where <span class="math inline">\(n = w_A + d + w_B\)</span> — wins and draws from filtered past meetings.</p>
-<p>No training step — just <strong>historical frequencies</strong> from match-level data.</p>
+<p>where <span class="math inline">\(n = w_A + d + w_B\)</span>: wins and draws from filtered past meetings.</p>
+<p>No training step: just <strong>historical frequencies</strong> from match-level data.</p>
 <aside class="notes">
 <p>Emphasize: this is a teaching sketch, not a betting model. Small <span class="math inline">\(n\)</span> → noisy.</p>
 <style type="text/css">
@@ -492,7 +491,7 @@ P(\text{B wins}) &amp;\approx \frac{w_B}{n}
       }</style></aside>
 </section>
 <section id="sanity-check-overall-match-rates" class="slide level2">
-<h2>Sanity check — overall match rates</h2>
+<h2>Sanity check: overall match rates</h2>
 <p>Before trusting a rivalry’s history, know the <strong>base rates</strong> in the full results file:</p>
 
 <img data-src="index_files/figure-revealjs/fig-baseline-rates-1.png" width="672" class="r-stretch quarto-figure-center" id="fig-baseline-rates"><p class="caption">
@@ -500,15 +499,15 @@ Figure&nbsp;1: Share of home win, draw, and away win (all played internationals)
 </p><p><strong>Benchmark:</strong> any fancier model should beat “always predict home win” on out-of-sample matches.</p>
 </section>
 <section id="example-brazil-vs-argentina-empirical-h2h" class="slide level2">
-<h2>Example — Brazil vs Argentina (empirical H2H)</h2>
+<h2>Example: Brazil vs Argentina (empirical H2H)</h2>
 <p>Same logic as <code>h2h_summary()</code> in the app: count wins from each team’s perspective.</p>
 
 <img data-src="index_files/figure-revealjs/fig-h2h-naive-prob-1.png" width="672" class="r-stretch quarto-figure-center" id="fig-h2h-naive-prob"><p class="caption">
 Figure&nbsp;2: Naive win/draw probabilities from head-to-head history
-</p><p><strong>Talking point:</strong> “If history repeated blindly, we’d assign these shares — but <span class="math inline">\(n\)</span> is small and rosters change.”</p>
+</p><p><strong>Talking point:</strong> “If history repeated blindly, we’d assign these shares: but <span class="math inline">\(n\)</span> is small and rosters change.”</p>
 </section>
 <section id="what-this-is-and-whats-next" class="slide level2">
-<h2>What this is — and what’s next</h2>
+<h2>What this is, and what’s next</h2>
 <table class="caption-top">
 <colgroup>
 <col style="width: 36%">
@@ -531,11 +530,11 @@ Figure&nbsp;2: Naive win/draw probabilities from head-to-head history
 </tr>
 </tbody>
 </table>
-<p><strong>This talk:</strong> exploration + <strong>one</strong> naive forecast — enough to connect to your abstract’s “prediction sketch.”</p>
+<p><strong>This talk:</strong> exploration + <strong>one</strong> naive forecast, enough to connect to your abstract’s “prediction sketch.”</p>
 <p><strong>Later:</strong> Elo ratings, logistic model in BigQuery, Parquet event pipeline for club comparisons.</p>
 </section>
 <section id="deploy-posit-connect-cloud" class="slide level2">
-<h2>Deploy — Posit Connect Cloud</h2>
+<h2>Deploy: Posit Connect Cloud</h2>
 <p>Same pattern as other course apps:</p>
 <ol type="1">
 <li><code>rsconnect::writeManifest()</code> next to <code>app.R</code></li>
@@ -559,10 +558,10 @@ Figure&nbsp;2: Naive win/draw probabilities from head-to-head history
 <h2>Want to learn more?</h2>
 <p><strong>Data (source dataset):</strong></p>
 <p><a href="https://github.com/martj42/international_results">https://github.com/martj42/international_results</a></p>
-<p><strong>This project — Shiny app &amp; pipeline:</strong></p>
+<p><strong>This project: Shiny app &amp; pipeline:</strong></p>
 <p><a href="https://github.com/rabin0208/world_cup_analytics">https://github.com/rabin0208/world_cup_analytics</a></p>
 <p><strong>This deck:</strong></p>
-<p><code>world_cup_analytics_presentation</code> — render with Quarto:</p>
+<p><code>world_cup_analytics_presentation</code>: render with Quarto:</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode numberSource bash number-lines code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href=""></a><span class="ex">quarto</span> render index.qmd</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section></section>
 <section id="thank-you" class="title-slide slide level1 center">
@@ -640,7 +639,7 @@ Figure&nbsp;2: Naive win/draw probabilities from head-to-head history
         progress: true,
 
         // Display the page number of the current slide
-        slideNumber: false,
+        slideNumber: 'c/t',
 
         // 'all', 'print', or 'speaker'
         showSlideNumber: 'all',

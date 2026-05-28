@@ -1,0 +1,4 @@
+/* Slightly smaller body text on all slides (Reveal default is 40px) */
+:root {
+  --r-main-font-size: 34px;
+}

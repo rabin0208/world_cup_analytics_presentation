@@ -2,7 +2,10 @@
 title: "World Cup Analytics with R"
 author: "Rabindranath Duran Pons"
 date: today
-format: revealjs
+format:
+  revealjs:
+    slide-number: true
+    css: styles.css
 execute:
   echo: false
   warning: false
@@ -14,13 +17,11 @@ execute:
 
 Pick a fixture and ask:
 
-- **Head-to-head** — who leads on wins and draws?
-- **Recent form** — how has each team played in their last 10 matches?
-- **Scope** — all meetings or **World Cup only**? Which years count?
+- **Head-to-head**: who leads on wins and draws?
+- **Recent form**: how has each team played in their last 10 matches?
+- **Scope**: all meetings or **World Cup only**? Which years count?
 
-::: {.fragment}
-*[Placeholder: screenshot — fixture picker + matchup summary + H2H bar chart]*
-:::
+![](images/01-h2h-barchart.png){fig-alt="Head-to-head bar chart for Mexico vs South Africa showing 2 wins for Mexico, 1 draw, and 1 win for South Africa." width="92%"}
 
 ::: {.notes}
 Optional: ask the room one question they care about before moving to data.
@@ -40,19 +41,19 @@ That gap is why one community dataset matters.
 
 ---
 
-## Data source — [martj42/international_results](https://github.com/martj42/international_results)
+## Data source: [martj42/international_results](https://github.com/martj42/international_results)
 
-**Special thanks** to [martj42/international_results](https://github.com/martj42/international_results) — a maintained, **free** dataset of men's international matches:
+**Special thanks** to [martj42/international_results](https://github.com/martj42/international_results): a maintained, **free** dataset of men's international matches:
 
 - **~49,000+ results** from the first official match (1872) through recent years
-- World Cups, friendlies, continental tournaments — one consistent schema
+- World Cups, friendlies, continental tournaments: one consistent schema
 - Companion files: goalscorers, shootouts, former country names
-- **CC0** license — use and share with attribution
+- **CC0** license: use and share with attribution
 
 Also on [Kaggle](https://www.kaggle.com/datasets/martj42/international-football-results-from-1872-to-2017) · contributions welcome via PRs on GitHub
 
 ::: {.notes}
-Say clearly: "I did not build this raw history — I stand on martj42's work."
+Say clearly: "I did not build this raw history. I stand on martj42's work."
 :::
 
 ---
@@ -63,12 +64,12 @@ Copies live under `data/international/` in [world_cup_analytics](https://github.
 
 | File | Role |
 |------|------|
-| `results.csv` | Matches — date, teams, scores, tournament, venue |
+| `results.csv` | Matches: date, teams, scores, tournament, venue |
 | `goalscorers.csv` | Goal events linked to matches |
 | `shootouts.csv` | Penalty shootouts |
 | `former_names.csv` | Historical country name mappings |
 
-Same columns in the warehouse as in the bundled CSV — one schema from upload through the app.
+Same columns in the warehouse as in the bundled CSV: one schema from upload through the app.
 
 ---
 
@@ -85,22 +86,22 @@ flowchart LR
 
 **Upload** refreshes the warehouse. **Explore** reads `international_results` from BigQuery at startup.
 
-*[Placeholder: `images/pipeline.png` — optional custom diagram]*
+*[Placeholder: `images/pipeline.png`: optional custom diagram]*
 
 ---
 
-## Upload — R to GCS and BigQuery
+## Upload: R to GCS and BigQuery
 
 `upload_international_results.R` in the **world_cup_analytics** repo:
 
-1. `gcs_upload()` — dated prefix under `raw/international/results/`
+1. `gcs_upload()`: dated prefix under `raw/international/results/`
 2. `read_csv()` with explicit types (`NA` scores → NULL)
-3. `bq_table_upload()` — `WRITE_TRUNCATE` into `analytics.international_results`
+3. `bq_table_upload()`: `WRITE_TRUNCATE` into `analytics.international_results`
 
 Re-run when martj42's dataset updates; the live app picks up the new table on next deploy.
 
 ::: {.notes}
-Optional live run in RStudio (~10–20 s) to show row count after load.
+Optional live run in RStudio (~10-20 s) to show row count after load.
 :::
 
 ---
@@ -151,7 +152,7 @@ Say: "The warehouse is the source of truth; dplyr logic is unchanged after the d
 
 ---
 
-## Local fallback — bundled CSV
+## Local fallback: bundled CSV
 
 **Production (Connect):** `USE_BIGQUERY=TRUE` → `analytics.international_results`
 
@@ -161,23 +162,23 @@ The CSV in `data/international/` also feeds the upload script when you refresh B
 
 ---
 
-## Explore — Shiny dashboard
+## Explore: Shiny dashboard
 
 **World Cup Analytics** (`app.R`)
 
-- Single focused view — no multi-tab navigation
+- Single focused view: no multi-tab navigation
 - **bslib** sidebar + cards: fixture picker, H2H chart, match tables
 - Same preprocessing after load from BigQuery (or CSV fallback): dates, `is_played`, World Cup flags
 
-*[Placeholder: app home — value boxes: 2026 fixtures / World Cup matches played]*
+*[Placeholder: app home: value boxes: 2026 fixtures / World Cup matches played]*
 
 ---
 
-## Sidebar — fixture and H2H filters
+## Sidebar: fixture and H2H filters
 
-- **Fixture** — dropdown of unplayed 2026 group-stage matches from the loaded results
-- **Head-to-head year range** — slider over full history (1872 → today)
-- **Competition** — multi-select; leave empty for all competitions, or pick e.g. *FIFA World Cup* only
+- **Fixture**: dropdown of unplayed 2026 group-stage matches from the loaded results
+- **Head-to-head year range**: slider over full history (1872 → today)
+- **Competition**: multi-select; leave empty for all competitions, or pick e.g. *FIFA World Cup* only
 
 *[Placeholder: screenshot with fixture selected + competition filter applied]*
 
@@ -187,16 +188,16 @@ Demo flow: pick a fixture → widen/narrow years → optionally filter to World 
 
 ---
 
-## Main view — matchup and head-to-head
+## Main view: matchup and head-to-head
 
 For the selected fixture:
 
-1. **Matchup card** — date, city, neutral vs non-neutral venue
-2. **H2H bar chart** — wins and draws (home team vs away team)
-3. **H2H results table** — every prior meeting under the current filters
-4. **Last 10 games** — separate tables for each team in the fixture
+1. **Matchup card**: date, city, neutral vs non-neutral venue
+2. **H2H bar chart**: wins and draws (home team vs away team)
+3. **H2H results table**: every prior meeting under the current filters
+4. **Last 10 games**: separate tables for each team in the fixture
 
-*[Placeholder: two teams you plan to demo — e.g. USA vs Mexico or your choice]*
+*[Placeholder: two teams you plan to demo: e.g. USA vs Mexico or your choice]*
 
 ::: {.notes}
 Rehearse this path. Narrate "history before kickoff."
@@ -212,7 +213,7 @@ h2h_matches(team_a, team_b, data = played_results)
 h2h_summary(team_a, team_b, data = played_results)
 ```
 
-*[Placeholder: diagram or 1-line callout — home/away goal attribution]*
+*[Placeholder: diagram or 1-line callout: home/away goal attribution]*
 
 ---
 
@@ -230,9 +231,9 @@ P(\text{B wins}) &\approx \frac{w_B}{n}
 \end{aligned}
 $$
 
-where $n = w_A + d + w_B$ — wins and draws from filtered past meetings.
+where $n = w_A + d + w_B$: wins and draws from filtered past meetings.
 
-No training step — just **historical frequencies** from match-level data.
+No training step: just **historical frequencies** from match-level data.
 
 ::: {.notes}
 Emphasize: this is a teaching sketch, not a betting model. Small $n$ → noisy.
@@ -240,7 +241,7 @@ Emphasize: this is a teaching sketch, not a betting model. Small $n$ → noisy.
 
 ---
 
-## Sanity check — overall match rates
+## Sanity check: overall match rates
 
 Before trusting a rivalry’s history, know the **base rates** in the full results file:
 
@@ -285,7 +286,7 @@ ggplot(baseline, aes(x = outcome, y = rate, fill = outcome)) +
 
 ---
 
-## Example — Brazil vs Argentina (empirical H2H)
+## Example: Brazil vs Argentina (empirical H2H)
 
 Same logic as `h2h_summary()` in the app: count wins from each team’s perspective.
 
@@ -362,24 +363,24 @@ ggplot(probs, aes(x = outcome, y = rate, fill = outcome)) +
   theme(legend.position = "none", plot.title = element_text(hjust = 0.5, face = "bold"))
 ```
 
-**Talking point:** “If history repeated blindly, we’d assign these shares — but $n$ is small and rosters change.”
+**Talking point:** “If history repeated blindly, we’d assign these shares, but $n$ is small and rosters change.”
 
 ---
 
-## What this is — and what’s next
+## What this is, and what’s next
 
 | With match-level CSV / BQ | Needs event or lineup data (StatsBomb, etc.) |
 |---------------------------|-----------------------------------------------|
 | Empirical H2H, home/draw/away baselines | xG, player form, tactical matchups |
 | Elo / simple glm on team strength | Club vs international windows with lineups |
 
-**This talk:** exploration + **one** naive forecast — enough to connect to your abstract’s “prediction sketch.”
+**This talk:** exploration + **one** naive forecast, enough to connect to your abstract’s “prediction sketch.”
 
 **Later:** Elo ratings, logistic model in BigQuery, Parquet event pipeline for club comparisons.
 
 ---
 
-## Deploy — Posit Connect Cloud
+## Deploy: Posit Connect Cloud
 
 Same pattern as other course apps:
 
@@ -408,13 +409,13 @@ Same pattern as other course apps:
 
 [https://github.com/martj42/international_results](https://github.com/martj42/international_results)
 
-**This project — Shiny app & pipeline:**
+**This project: Shiny app & pipeline:**
 
 [https://github.com/rabin0208/world_cup_analytics](https://github.com/rabin0208/world_cup_analytics)
 
 **This deck:**
 
-`world_cup_analytics_presentation` — render with Quarto:
+`world_cup_analytics_presentation`: render with Quarto:
 
 ```bash
 quarto render index.qmd
