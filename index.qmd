@@ -582,7 +582,7 @@ ggplot(probs, aes(x = outcome, y = rate, fill = outcome)) +
 | Empirical H2H, home/draw/away baselines | xG, player form, tactical matchups |
 | Elo / simple glm on team strength | Club vs international windows with lineups |
 
-**This talk:** exploration + **one** naive forecast, enough to connect to your abstract’s “prediction sketch.”
+**This talk:** exploration + **one** naive forecast
 
 **Later:** Multinomial model for home/draw/away outcomes, more dashboard views using additional tables, and serve that model on **Kubernetes** for batch or API predictions (the Shiny app can stay on Posit Connect).
 
